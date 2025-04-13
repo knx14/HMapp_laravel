@@ -1,0 +1,7 @@
+# ───── Laravel関連 ─────
+/laravel/vendor/
+/laravel/node_modules/
+/laravel/storage/*.key
+/laravel/storage/logs/
+/laravel/.env
+/laravel/public/storage
