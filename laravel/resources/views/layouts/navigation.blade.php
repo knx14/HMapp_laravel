@@ -15,6 +15,10 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                
+                    <x-nav-link :href="route('csv.upload')" :active="request()->routeIs('csv.upload')">
+                        {{ __('解析する') }}
+                    </x-nav-link>
                 </div>
             </div>
 

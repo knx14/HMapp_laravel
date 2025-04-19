@@ -20,7 +20,7 @@ class MainData extends Model
         'command',
         'frequency',
         'c_real',
-        'c_imag',
+        'c_image',
     ];
 
     // タイムスタンプの自動更新を有効にする（created_at, updated_at）

@@ -12,12 +12,11 @@
                     {{ __("You're logged in!") }}
                 </div>
 
-                {{-- CSVアップロードリンク --}}
+                {{-- 今後「過去の解析画像を追加予定のスペース」 --}}
                 <div class="mt-6 p-6">
-                    <a href="{{ route('csv.upload') }}"
-                       class="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">
-                        CSVファイルをアップロードする
-                    </a>
+                    <h3 class="text-lg font-bold mb-2">過去の解析結果</h3>
+                    <p class="text-sm text-gray-400">ここに過去の結果を画像表示する予定です。</p>
+                    {{-- 画像一覧は今後ここに挿入されます --}}
                 </div>
             </div>
         </div>

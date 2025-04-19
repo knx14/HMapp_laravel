@@ -22,6 +22,9 @@ class CsvUploadController extends Controller
         $request->validate([
             'csv_file' => 'required|file|mimes:csv,txt',
         ]);
+        $file = $request->file('csv_file');
+            $handle = fopen($file, 'r');
+            fgetcsv($handle); // ヘッダー行をスキップ
 
         $userId = Auth::id();
         $userTable = "user_{$userId}_data";
@@ -39,24 +42,20 @@ class CsvUploadController extends Controller
                 $table->string('command')->nullable();
                 $table->text('frequency')->nullable();
                 $table->text('c_real')->nullable();
-                $table->text('c_imag')->nullable();
+                $table->text('c_image')->nullable();
                 $table->timestamps();
             });
         }
-
-        try {
-            $file = $request->file('csv_file');
-            $handle = fopen($file, 'r');
-            fgetcsv($handle); // ヘッダー行をスキップ
+        //データをグループ化
+        $grouped = [];            
 
             while (($row = fgetcsv($handle)) !== false) {
-                $dataType = trim($row[7]);
-                $values = array_slice($row, 8);
-                $serialized = serialize($values);
-
-                $baseData = [
+                $key = implode('_', [$row[0], intval($row[1]), intval($row[3]),intval($row[4])]);
+                
+                if(!isset($grouped[$key])){
+                    $grouped[$key] = [
                     'user_id'     => $userId,
-                    'date_time'   => now(),
+                    'date_time'   => $row[0],
                     'total_count' => intval($row[1]),
                     'memo'        => $row[2],
                     'count1'      => intval($row[3]),
@@ -67,36 +66,35 @@ class CsvUploadController extends Controller
                     'c_imag'      => null,
                     'created_at'  => now(),
                     'updated_at'  => now(),
-                ];
+                    ];   
+                }
+                
+                $dataType = trim($row[7]);
+                $values = array_slice($row, 8);
+                $serialized = serialize($values);
 
                 // データタイプ別に格納
                 if ($dataType === 'Frequency') {
-                    $baseData['frequency'] = $serialized;
-                    // main_data にも保存
-                    MainData::create($baseData);
-                    // ユーザーごとのテーブルにも保存
-                    DB::table($userTable)->insert($baseData);
+                    $grouped[$key]['frequency'] = $serialized;
                 } elseif ($dataType === 'C-Real') {
-                    $baseData['c_real'] = $serialized;
-                    MainData::create($baseData);
-                    DB::table($userTable)->insert($baseData);
+                    $grouped[$key]['c_real'] = $serialized;
                 } elseif ($dataType === 'C-Imag') {
-                    $baseData['c_imag'] = $serialized;
-                    MainData::create($baseData);
-                    DB::table($userTable)->insert($baseData);
+                    $grouped[$key]['c_imag'] = $serialized;
                 }
-
-                
             }
 
             fclose($handle);
+            //保存処理(main_data+個別テーブルへの格納)
+            foreach($grouped as $data){
+                // main_data にも保存
+                MainData::create($data);
+                // ユーザーごとのテーブルにも保存
+                DB::table($userTable)->insert($data);
+            }
             return redirect()->back()->with('success', 'CSVを保存しました');
-        } catch (\Exception $e) {
-            Log::error('CSVアップロード処理でエラーが発生: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'データの保存中に問題が発生しました。');
         }
     }
-}
+
 
 
 
