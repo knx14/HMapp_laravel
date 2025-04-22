@@ -48,8 +48,9 @@ class CsvUploadController extends Controller
                 
                 if(!isset($grouped[$key])){
                     $grouped[$key] = [
+                    'csv_file_id' => $csvFile->id,
                     'user_id'     => $userId,
-                    'date_time'   => Carbon::parse($row[0]),
+                    'date_time'   => $row[0],
                     'total_count' => intval($row[1]),
                     'memo'        => $row[2],
                     'count1'      => intval($row[3]),
@@ -80,14 +81,9 @@ class CsvUploadController extends Controller
             fclose($handle);
             //保存処理
             foreach($grouped as $data){
-                $data['csv_file_id'] = $csvFile->id; // <- ファイルとの紐づけ
                 // CsvDataRow に保存
                 CsvDataRow::create($data);
             }
             return redirect()->back()->with('success', 'CSVを保存しました');
         }
     }
-
-
-
-

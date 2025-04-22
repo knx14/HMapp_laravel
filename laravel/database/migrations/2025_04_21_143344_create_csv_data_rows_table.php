@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('command')->nullable();
             $table->text('frequency')->nullable();
             $table->text('c_real')->nullable();
-            $table->text('c_image')->nullable();
+            $table->text('c_imag')->nullable();
             $table->timestamps();
         });
     }
