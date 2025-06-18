@@ -5,9 +5,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class CsvDataRow extends Model
 {
+    // 使用するテーブル名（Laravelの命名規則と異なる場合に明示）
+    protected $table = 'csv_data_rows';
+
     protected $fillable = [
         'csv_file_id', 
-        'user_id', 
         'date_time',
         'total_count', 
         'memo', 

@@ -49,7 +49,6 @@ class CsvUploadController extends Controller
                 if(!isset($grouped[$key])){
                     $grouped[$key] = [
                     'csv_file_id' => $csvFile->id,
-                    'user_id'     => $userId,
                     'date_time'   => $row[0],
                     'total_count' => intval($row[1]),
                     'memo'        => $row[2],
@@ -80,9 +79,11 @@ class CsvUploadController extends Controller
 
             fclose($handle);
             //保存処理
+            //1行ずつじゃなくてすべてまとめて送ることにした
+            //DB::table('csv_data_rows')->insert(array_values($grouped));
             foreach($grouped as $data){
-                // CsvDataRow に保存
-                CsvDataRow::create($data);
+              // CsvDataRow に保存
+              CsvDataRow::create($data);
             }
             return redirect()->back()->with('success', 'CSVを保存しました');
         }
