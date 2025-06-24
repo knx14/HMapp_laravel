@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CsvUploadController;
+use App\Http\Controllers\RdsSearchController;
 
 Route::get('/', function () {
     return view('welcome'); // Breeze で提供されている認証トップページ
@@ -24,6 +25,11 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/csv/upload', [CsvUploadController::class, 'create'])->name('csv.upload');
     Route::post('/csv/upload', [CsvUploadController::class, 'store'])->name('csv.upload.store');
+    
+    // RDS検索ルート
+    Route::get('/rds/search', [RdsSearchController::class, 'index'])->name('rds.search');
+    Route::get('/rds/search/execute', [RdsSearchController::class, 'search'])->name('rds.search.execute');
+    Route::get('/rds/search/api', [RdsSearchController::class, 'searchApi'])->name('rds.search.api');
 });
 
 require __DIR__.'/auth.php';

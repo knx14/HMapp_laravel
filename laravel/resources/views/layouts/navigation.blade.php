@@ -19,6 +19,10 @@
                     <x-nav-link :href="route('csv.upload')" :active="request()->routeIs('csv.upload')">
                         {{ __('解析する') }}
                     </x-nav-link>
+                    
+                    <x-nav-link :href="route('rds.search')" :active="request()->routeIs('rds.search*')">
+                        {{ __('RDS検索') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -73,6 +77,14 @@
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
+            </x-responsive-nav-link>
+            
+            <x-responsive-nav-link :href="route('csv.upload')" :active="request()->routeIs('csv.upload')">
+                {{ __('解析する') }}
+            </x-responsive-nav-link>
+            
+            <x-responsive-nav-link :href="route('rds.search')" :active="request()->routeIs('rds.search*')">
+                {{ __('RDS検索') }}
             </x-responsive-nav-link>
         </div>
 

@@ -2,24 +2,16 @@
 FROM php:8.2-fpm-alpine
 
 # 必要なパッケージをインストール (GDライブラリのJPEG/FreeTypeサポートを含む)
-RUN apt-get update && apt-get install -y \
-    zip unzip git curl libpng-dev libjpeg-dev libfreetype6-dev libonig-dev \
-    # GD拡張の依存関係をインストール
+RUN apk add --no-cache \
+    zip unzip git curl libpng-dev libjpeg-dev freetype-dev oniguruma-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    # PHP拡張をインストール
-    && docker-php-ext-install gd pdo pdo_mysql bcmath mbstring \
-    # 不要になったaptキャッシュをクリーンアップしてイメージサイズを削減
-    && rm -rf /var/lib/apt/lists/*
+    && docker-php-ext-install gd pdo pdo_mysql bcmath mbstring
 
 # Composer のインストール
 COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
 
 # 作業ディレクトリの設定
 WORKDIR /var/www/html
-
-# アプリケーションのコードをコンテナにコピー
-# Dockerfileの場所 (docker/php/) から見て、プロジェクトルートの 'laravel' ディレクトリをコピー
-COPY ../../laravel .
 
 # Composer の依存関係をインストール (本番環境向けに開発用依存関係は除外)
 RUN composer install --no-dev --optimize-autoloader --prefer-dist

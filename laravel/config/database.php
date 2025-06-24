@@ -62,6 +62,24 @@ return [
             ]) : [],
         ],
 
+        'rds' => [
+            'driver' => 'mysql',
+            'host' => env('RDS_HOST'),
+            'port' => env('RDS_PORT', '3306'),
+            'database' => env('RDS_DATABASE'),
+            'username' => env('RDS_USERNAME'),
+            'password' => env('RDS_PASSWORD'),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('RDS_SSL_CA'),
+            ]) : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),
