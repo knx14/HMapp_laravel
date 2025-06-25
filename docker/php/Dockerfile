@@ -3,7 +3,7 @@ FROM php:8.2-fpm-alpine
 
 # 必要なパッケージをインストール (GDライブラリのJPEG/FreeTypeサポートを含む)
 RUN apk add --no-cache \
-    zip unzip git curl libpng-dev libjpeg-dev freetype-dev oniguruma-dev \
+    zip unzip git curl libpng-dev libjpeg-turbo-dev freetype-dev oniguruma-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd pdo pdo_mysql bcmath mbstring
 
