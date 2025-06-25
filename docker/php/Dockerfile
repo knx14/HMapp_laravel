@@ -13,6 +13,8 @@ COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
 # 作業ディレクトリの設定
 WORKDIR /var/www/html
 
+COPY . /var/www/html
+
 # Composer の依存関係をインストール (本番環境向けに開発用依存関係は除外)
 RUN composer install --no-dev --optimize-autoloader --prefer-dist
 
