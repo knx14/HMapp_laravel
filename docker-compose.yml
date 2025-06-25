@@ -57,7 +57,7 @@ services:
       - laravel_network
 
 volumes:
-  # mysql_data:
+  mysql_data:
 
 networks:
   laravel_network:
