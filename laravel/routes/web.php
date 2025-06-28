@@ -6,7 +6,7 @@ use App\Http\Controllers\CsvUploadController;
 use App\Http\Controllers\RdsSearchController;
 
 Route::get('/', function () {
-    return view('welcome'); // Breeze で提供されている認証トップページ
+    return view('auth.entry'); // ログイン・新規登録統合ページ
 })->middleware('guest');
 // Route::get('/', function () {
 //     return view('welcome');
