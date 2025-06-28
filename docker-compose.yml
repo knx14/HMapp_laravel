@@ -12,6 +12,7 @@ services:
       - php
     networks:
       - laravel_network
+    restart: always
 
   # PHP-FPM (Laravel 実行環境)
   php:
@@ -25,6 +26,7 @@ services:
       # - /var/www/html/node_modules
     networks:
       - laravel_network
+    restart: always
 
   # # MySQL データベース
   # db:
