@@ -5,7 +5,9 @@
     <div class="w-full max-w-md mx-auto mt-10 bg-white p-8 rounded-xl shadow-md">
         <div class="flex flex-col items-center mb-6">
             <div class="mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 1.104-.896 2-2 2s-2-.896-2-2 .896-2 2-2 2 .896 2 2zm0 0c0 1.104.896 2 2 2s2-.896 2-2-.896-2-2-2-2 .896-2 2zm0 0v2m0 4h.01" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-600 mx-auto" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C12.28 2 12.56 2.07 12.8 2.21l7 4A1 1 0 0 1 20 7.05V12c0 5.25-4.5 8.25-7.2 9.7a1 1 0 0 1-.8 0C8.5 20.25 4 17.25 4 12V7.05a1 1 0 0 1 .2-0.84l7-4A1 1 0 0 1 12 2z"/>
+                </svg>
             </div>
             <h2 class="text-2xl font-bold mb-2">管理者ログイン</h2>
         </div>
