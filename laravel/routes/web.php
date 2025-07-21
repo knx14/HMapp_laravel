@@ -3,17 +3,16 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CsvUploadController;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/', function () {
-    return view('welcome'); // Breeze で提供されている認証トップページ
-})->middleware('guest');
+    return view('auth.auth');
+});
 // Route::get('/', function () {
 //     return view('welcome');
 // });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -25,5 +24,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/csv/upload', [CsvUploadController::class, 'create'])->name('csv.upload');
     Route::post('/csv/upload', [CsvUploadController::class, 'store'])->name('csv.upload.store');
 });
+
+Route::get('/data-search', [App\Http\Controllers\DataSearchController::class, 'index'])->name('data-search.index');
+Route::get('data-search/export', [\App\Http\Controllers\DataSearchController::class, 'export'])->name('data-search.export');
 
 require __DIR__.'/auth.php';
