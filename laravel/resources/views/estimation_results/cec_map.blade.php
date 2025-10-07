@@ -57,7 +57,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    const API_KEY = 'AIzaSyBdFTJiz5KxjCny9-tYon0RRhtrkgpKbAc';
+    const API_KEY = '{{ env('GOOGLE_MAPS_API_KEY') }}';
 
     const boundaryPolygonRaw = @json($boundaryPolygon);
     const pointsRaw = @json($points);

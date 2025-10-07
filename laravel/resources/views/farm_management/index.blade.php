@@ -123,7 +123,7 @@
 <!-- Google Maps JavaScript -->
 <script>
     // Google Maps APIキー
-    const API_KEY = 'AIzaSyBdFTJiz5KxjCny9-tYon0RRhtrkgpKbAc';
+    const API_KEY = '{{ env('GOOGLE_MAPS_API_KEY') }}';
     
     // グローバル変数
     let map = null;
