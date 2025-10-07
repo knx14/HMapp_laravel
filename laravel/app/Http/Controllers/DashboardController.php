@@ -4,15 +4,17 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Measurement;
+use App\Models\AppUser;
+use App\Models\Upload;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        // cognito_idのユニーク数
-        $userCount = Measurement::distinct('cognito_id')->count('cognito_id');
-        // 全行数
-        $uploadCount = Measurement::count();
+        // app_usersのユーザー数
+        $userCount = AppUser::count();
+        // アップロード数
+        $uploadCount = Upload::count();
 
         return view('dashboard', [
             'userCount' => $userCount,

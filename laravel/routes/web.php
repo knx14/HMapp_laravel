@@ -4,6 +4,8 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CsvUploadController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\FarmManagementController;
 
 Route::get('/', function () {
     return view('auth.auth');
@@ -25,7 +27,27 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/csv/upload', [CsvUploadController::class, 'store'])->name('csv.upload.store');
 });
 
-Route::get('/data-search', [App\Http\Controllers\DataSearchController::class, 'index'])->name('data-search.index');
-Route::get('data-search/export', [\App\Http\Controllers\DataSearchController::class, 'export'])->name('data-search.export');
+
+Route::middleware(['auth'])->group(function () {
+	Route::get('/users', [UserManagementController::class, 'index'])->name('user-management.index');
+	Route::get('/users/create', [UserManagementController::class, 'create'])->name('user-management.create');
+	Route::post('/users', [UserManagementController::class, 'store'])->name('user-management.store');
+	Route::get('/farms', [FarmManagementController::class, 'index'])->name('farm-management.index');
+	Route::get('/uploads', [App\Http\Controllers\UploadManagementController::class, 'index'])->name('upload-management.index');
+    // 推定結果閲覧
+    Route::get('/estimation-results', [\App\Http\Controllers\EstimationResultsController::class, 'index'])->name('estimation-results.index');
+    Route::get('/estimation-results/farms/{farm}', [\App\Http\Controllers\EstimationResultsController::class, 'farmDates'])
+        ->whereNumber('farm')
+        ->name('estimation-results.farm-dates');
+    Route::get('/estimation-results/farms/{farm}/uploads/{upload}', [\App\Http\Controllers\EstimationResultsController::class, 'cecMap'])
+        ->whereNumber('farm')
+        ->whereNumber('upload')
+        ->name('estimation-results.cec');
+});
+
+// 圃場の境界線データを取得するAPIエンドポイント（認証不要）
+Route::get('/api/farms/{farmId}/boundary', [FarmManagementController::class, 'getBoundary']);
+// 圃場内の測定データを取得するAPIエンドポイント（認証不要）
+Route::get('/api/farms/{farmId}/measurements', [FarmManagementController::class, 'getFarmMeasurements']);
 
 require __DIR__.'/auth.php';

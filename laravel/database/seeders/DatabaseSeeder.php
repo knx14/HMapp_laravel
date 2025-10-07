@@ -22,7 +22,9 @@ class DatabaseSeeder extends Seeder
 
         // AWS上で作成する予定のテーブルへダミーデータを挿入
         $this->call([
+            AppUsersSeeder::class,
             MeasurementSeeder::class,
+            FarmSeeder::class,
         ]);
     }
 }
