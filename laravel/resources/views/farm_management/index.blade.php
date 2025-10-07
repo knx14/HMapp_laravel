@@ -4,6 +4,12 @@
 @section('header-title', '圃場管理')
 
 @section('content')
+@if(session('success'))
+    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 mx-4">
+        {{ session('success') }}
+    </div>
+@endif
+
 <!-- Google Maps Modal -->
 <div id="mapModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
     <div class="flex items-center justify-center min-h-screen p-4">
@@ -18,21 +24,10 @@
             
             <!-- Modal Body -->
             <div class="p-6">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- 地図表示エリア -->
-                    <div>
-                        <h4 class="text-lg font-semibold mb-3">地図表示</h4>
-                        <div id="map" class="w-full h-96 bg-gray-200 rounded-lg"></div>
-                    </div>
-                    
-                    <!-- レーダーチャート表示エリア -->
-                    <div>
-                        <h4 class="text-lg font-semibold mb-3">土壌分析レーダーチャート</h4>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <canvas id="radarChart" width="400" height="400"></canvas>
-                        </div>
-                        <div id="chart-info" class="mt-2 text-sm text-gray-600"></div>
-                    </div>
+                <!-- 地図表示エリア -->
+                <div>
+                    <h4 class="text-lg font-semibold mb-3">地図表示</h4>
+                    <div id="map" class="w-full h-96 bg-gray-200 rounded-lg"></div>
                 </div>
                 
                 <div id="loading" class="hidden text-center py-4 text-gray-600">データを読み込み中...</div>
@@ -72,8 +67,19 @@
         <!-- 結果表示 -->
         <div class="bg-white rounded-2xl shadow overflow-hidden">
             <div class="px-8 py-6 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-800">圃場一覧</h2>
-                <p class="text-gray-600 mt-1">全{{ $farms->total() }}件中 {{ $farms->firstItem() ?? 0 }}-{{ $farms->lastItem() ?? 0 }}件を表示</p>
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-800">圃場一覧</h2>
+                        <p class="text-gray-600 mt-1">全{{ $farms->total() }}件中 {{ $farms->firstItem() ?? 0 }}-{{ $farms->lastItem() ?? 0 }}件を表示</p>
+                    </div>
+                    <a href="{{ route('farm-management.create') }}" 
+                       class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        圃場を追加
+                    </a>
+                </div>
             </div>
 
             @if($farms->count() > 0)
@@ -117,9 +123,6 @@
     </div>
 </div>
 
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <!-- Google Maps JavaScript -->
 <script>
     // Google Maps APIキー
@@ -130,7 +133,6 @@
     let currentPolygon = null;
     let currentMarkers = [];
     let mapModal = null;
-    let radarChart = null;
     
     // モーダル要素
     document.addEventListener('DOMContentLoaded', function() {
@@ -152,11 +154,6 @@
         // モーダルを閉じてクリーンアップする関数
         function closeModalAndCleanup() {
             mapModal.classList.add('hidden');
-            // チャートを破棄
-            if (radarChart) {
-                radarChart.destroy();
-                radarChart = null;
-            }
             // 地図のオーバーレイをクリア
             clearOverlays();
         }
@@ -176,9 +173,6 @@
                 
                 // Google Mapsを初期化して圃場を表示
                 showFarmOnMap(farmId);
-                
-                // 測定データを取得してレーダーチャートを表示
-                showRadarChart(farmId);
             });
         });
     });
@@ -259,139 +253,7 @@
         }
     }
 
-    // CECに対する飽和度を計算する関数
-    function calculateSaturation(value, cec) {
-        if (cec === 0) return 0; // ゼロ除算を避ける
-        return (value / cec) * 100;
-    }
 
-    // レーダーチャートを表示する関数
-    async function showRadarChart(farmId) {
-        const chartInfo = document.getElementById('chart-info');
-        
-        try {
-            // 測定データを取得
-            const response = await fetch(`/api/farms/${farmId}/measurements`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.error || '測定データの取得に失敗しました。');
-            }
-            
-            if (!data.success) {
-                throw new Error('測定データの取得に失敗しました。');
-            }
-            
-            const measurements = data.data.measurements;
-            
-            if (!measurements || measurements.length === 0) {
-                chartInfo.textContent = 'この圃場には測定データがありません。';
-                return;
-            }
-            
-            // 各測定地点のデータを処理
-            const chartData = [];
-            let validMeasurements = 0;
-            
-            measurements.forEach((measurement, index) => {
-                const values = measurement.values;
-                const cec = values['CEC'] ? parseFloat(values['CEC'].value) : 0;
-                const k2o = values['K2O'] ? parseFloat(values['K2O'].value) : 0;
-                const cao = values['CaO'] ? parseFloat(values['CaO'].value) : 0;
-                const mgo = values['MgO'] ? parseFloat(values['MgO'].value) : 0;
-                
-                if (cec > 0) {
-                    const saturationData = {
-                        label: `地点${index + 1}`,
-                        data: [
-                            calculateSaturation(k2o, cec),
-                            calculateSaturation(cao, cec),
-                            calculateSaturation(mgo, cec)
-                        ],
-                        borderColor: `hsl(${index * 60}, 70%, 50%)`,
-                        backgroundColor: `hsla(${index * 60}, 70%, 50%, 0.2)`,
-                        pointBackgroundColor: `hsl(${index * 60}, 70%, 50%)`,
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: `hsl(${index * 60}, 70%, 50%)`
-                    };
-                    chartData.push(saturationData);
-                    validMeasurements++;
-                }
-            });
-            
-            if (validMeasurements === 0) {
-                chartInfo.textContent = '有効なCECデータがありません。';
-                return;
-            }
-            
-            // 既存のチャートを破棄
-            if (radarChart) {
-                radarChart.destroy();
-            }
-            
-            // レーダーチャートを作成
-            const ctx = document.getElementById('radarChart').getContext('2d');
-            radarChart = new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: ['K2O飽和度', 'CaO飽和度', 'MgO飽和度'],
-                    datasets: chartData
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        r: {
-                            beginAtZero: true,
-                            max: 100,
-                            min: 0,
-                            ticks: {
-                                stepSize: 20,
-                                callback: function(value) {
-                                    return value + '%';
-                                }
-                            },
-                            pointLabels: {
-                                font: {
-                                    size: 12
-                                }
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return context.dataset.label + ': ' + context.parsed.r.toFixed(1) + '%';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-            
-            chartInfo.textContent = `${validMeasurements}地点の測定データを表示中（CECに対する飽和度）`;
-            
-        } catch (error) {
-            console.error('Radar chart error:', error);
-            chartInfo.textContent = `エラー: ${error.message}`;
-        }
-    }
 
     // 圃場を地図上に表示（まずは全点をマーカー表示）
     async function showFarmOnMap(farmId) {

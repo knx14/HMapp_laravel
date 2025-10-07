@@ -33,6 +33,8 @@ Route::middleware(['auth'])->group(function () {
 	Route::get('/users/create', [UserManagementController::class, 'create'])->name('user-management.create');
 	Route::post('/users', [UserManagementController::class, 'store'])->name('user-management.store');
 	Route::get('/farms', [FarmManagementController::class, 'index'])->name('farm-management.index');
+	Route::get('/farms/create', [FarmManagementController::class, 'create'])->name('farm-management.create');
+	Route::post('/farms', [FarmManagementController::class, 'store'])->name('farm-management.store');
 	Route::get('/uploads', [App\Http\Controllers\UploadManagementController::class, 'index'])->name('upload-management.index');
     // 推定結果閲覧
     Route::get('/estimation-results', [\App\Http\Controllers\EstimationResultsController::class, 'index'])->name('estimation-results.index');
