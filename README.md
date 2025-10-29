@@ -140,8 +140,7 @@ HMapp_laravel/
 - `uploads` - アップロードデータ
 - `analysis_results` - 分析結果
 - `result_values` - 分析値詳細
-- `csv_files` - CSVファイル管理
-- `csv_data_rows` - CSVデータ行
+
 
 ## 開発・デバッグ
 
