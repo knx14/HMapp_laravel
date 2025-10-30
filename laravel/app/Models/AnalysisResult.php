@@ -15,6 +15,11 @@ class AnalysisResult extends Model
         'longitude',
     ];
 
+    protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
+    ];
+
     public function upload(): BelongsTo
     {
         return $this->belongsTo(Upload::class);
