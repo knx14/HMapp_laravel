@@ -12,11 +12,22 @@ class Upload extends Model
         'farm_id',
         'file_path',
         'measurement_date',
+        'measurement_parameters',
+        'note1',
+        'note2',
+        'cultivation_type',
+        'status',
     ];
 
     protected $casts = [
         'measurement_date' => 'date',
+        'measurement_parameters' => 'array',
     ];
+
+    public const STATUS_UPLOADED   = 'uploaded';
+    public const STATUS_PROCESSING = 'processing';
+    public const STATUS_COMPLETED  = 'completed';
+    public const STATUS_EXEC_ERROR = 'exec_error';
 
     /**
      * 農場とのリレーション
@@ -29,9 +40,9 @@ class Upload extends Model
     /**
      * このアップロードに紐づく分析結果
      */
-    public function analysisResults(): HasMany
+    public function analysisResult(): HasOne
     {
-        return $this->hasMany(AnalysisResult::class);
+        return $this->hasOne(AnalysisResult::class);
     }
 
 }
