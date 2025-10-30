@@ -9,9 +9,13 @@ class ResultValue extends Model
 {
     protected $fillable = [
         'analysis_result_id',
-        'parameter',
-        'value',
+        'parameter_name',
+        'parameter_value',
         'unit',
+    ];
+
+    protected $casts = [
+        'parameter_value' => 'float',
     ];
 
     public function analysisResult(): BelongsTo
