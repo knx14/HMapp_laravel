@@ -16,6 +16,10 @@
 			<form method="GET" action="{{ route('user-management.index') }}" class="space-y-4">
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 					<div>
+						<label class="block font-semibold mb-1">Cognito Sub</label>
+						<input type="text" name="cognito_sub" value="{{ $filters['cognito_sub'] ?? '' }}" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Cognito Sub を入力">
+					</div>
+					<div>
 						<label class="block font-semibold mb-1">名前</label>
 						<input type="text" name="name" value="{{ $filters['name'] ?? '' }}" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="名前 を入力">
 					</div>
@@ -53,6 +57,7 @@
 					<thead>
 						<tr class="bg-gray-100 text-gray-700">
 							<th class="px-4 py-2 border-b">user_id</th>
+							<th class="px-4 py-2 border-b">cognito_sub</th>
 							<th class="px-4 py-2 border-b">name</th>
 							<th class="px-4 py-2 border-b">email</th>
 							<th class="px-4 py-2 border-b">ja_name</th>
@@ -64,15 +69,16 @@
 						@forelse($users as $user)
 							<tr class="border-b hover:bg-blue-50">
 								<td class="px-4 py-2">{{ $user->id }}</td>
-								<td class="px-4 py-2">{{ $user->name }}</td>
-								<td class="px-4 py-2">{{ $user->email }}</td>
-								<td class="px-4 py-2">{{ $user->ja_name }}</td>
+								<td class="px-4 py-2">{{ $user->cognito_sub }}</td>
+								<td class="px-4 py-2">{{ $user->name ?? '-' }}</td>
+								<td class="px-4 py-2">{{ $user->email ?? '-' }}</td>
+								<td class="px-4 py-2">{{ $user->ja_name ?? '-' }}</td>
 								<td class="px-4 py-2">{{ $user->created_at }}</td>
 								<td class="px-4 py-2">{{ $user->updated_at }}</td>
 							</tr>
 						@empty
 							<tr>
-								<td colspan="6" class="text-center py-8 text-gray-400">データがありません</td>
+								<td colspan="7" class="text-center py-8 text-gray-400">データがありません</td>
 							</tr>
 						@endforelse
 					</tbody>

@@ -23,15 +23,30 @@
 				@csrf
 				
 				<div>
-					<label for="name" class="block font-semibold mb-2">名前 <span class="text-red-500">*</span></label>
+					<label for="cognito_sub" class="block font-semibold mb-2">Cognito Sub</label>
+					<input 
+						type="text" 
+						id="cognito_sub" 
+						name="cognito_sub" 
+						value="{{ old('cognito_sub') }}"
+						class="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 @error('cognito_sub') border-red-500 @enderror" 
+						placeholder="Cognito Subを入力してください（任意）"
+					>
+					@error('cognito_sub')
+						<p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+					@enderror
+					<p class="text-gray-500 text-sm mt-1">未入力の場合は空で登録されます（後から更新可能）。</p>
+				</div>
+
+				<div>
+					<label for="name" class="block font-semibold mb-2">名前</label>
 					<input 
 						type="text" 
 						id="name" 
 						name="name" 
 						value="{{ old('name') }}"
 						class="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 @error('name') border-red-500 @enderror" 
-						placeholder="名前を入力してください"
-						required
+						placeholder="名前を入力してください（任意）"
 					>
 					@error('name')
 						<p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -39,15 +54,14 @@
 				</div>
 
 				<div>
-					<label for="email" class="block font-semibold mb-2">メールアドレス <span class="text-red-500">*</span></label>
+					<label for="email" class="block font-semibold mb-2">メールアドレス</label>
 					<input 
 						type="email" 
 						id="email" 
 						name="email" 
 						value="{{ old('email') }}"
 						class="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 @error('email') border-red-500 @enderror" 
-						placeholder="メールアドレスを入力してください"
-						required
+						placeholder="メールアドレスを入力してください（任意）"
 					>
 					@error('email')
 						<p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -55,15 +69,14 @@
 				</div>
 
 				<div>
-					<label for="ja_name" class="block font-semibold mb-2">所属JA名 <span class="text-red-500">*</span></label>
+					<label for="ja_name" class="block font-semibold mb-2">所属JA名</label>
 					<input 
 						type="text" 
 						id="ja_name" 
 						name="ja_name" 
 						value="{{ old('ja_name') }}"
 						class="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 @error('ja_name') border-red-500 @enderror" 
-						placeholder="所属JA名を入力してください"
-						required
+						placeholder="所属JA名を入力してください（任意）"
 					>
 					@error('ja_name')
 						<p class="text-red-500 text-sm mt-1">{{ $message }}</p>

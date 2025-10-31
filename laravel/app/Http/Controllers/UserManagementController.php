@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\AppUser;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 
@@ -14,6 +13,7 @@ class UserManagementController extends Controller
 	{
 		$name = $request->query('name');
 		$jaName = $request->query('ja_name');
+		$cognitoSub = $request->query('cognito_sub');
 
 		$query = AppUser::query();
 		if (!empty($name)) {
@@ -21,6 +21,9 @@ class UserManagementController extends Controller
 		}
 		if (!empty($jaName)) {
 			$query->where('ja_name', 'like', '%' . $jaName . '%');
+		}
+		if (!empty($cognitoSub)) {
+			$query->where('cognito_sub', 'like', '%' . $cognitoSub . '%');
 		}
 
 		$users = $query->orderByDesc('id')->get();
@@ -30,6 +33,7 @@ class UserManagementController extends Controller
 			'filters' => [
 				'name' => $name ?? '',
 				'ja_name' => $jaName ?? '',
+				'cognito_sub' => $cognitoSub ?? '',
 			],
 		]);
 	}
@@ -48,24 +52,24 @@ class UserManagementController extends Controller
 	public function store(Request $request)
 	{
 		$request->validate([
-			'name' => 'required|string|max:255',
-			'email' => 'required|string|email|max:255|unique:app_users',
-			'ja_name' => 'required|string|max:255',
+			'cognito_sub' => 'nullable|string|max:255|unique:app_users,cognito_sub',
+			'name' => 'nullable|string|max:255',
+			'email' => 'nullable|string|email|max:255',
+			'ja_name' => 'nullable|string|max:255',
 		], [
-			'name.required' => '名前は必須です。',
+			'cognito_sub.unique' => 'このCognito Subは既に登録されています。',
+			'cognito_sub.max' => 'Cognito Subは255文字以内で入力してください。',
 			'name.max' => '名前は255文字以内で入力してください。',
-			'email.required' => 'メールアドレスは必須です。',
 			'email.email' => '有効なメールアドレスを入力してください。',
-			'email.unique' => 'このメールアドレスは既に登録されています。',
-			'ja_name.required' => 'JA名は必須です。',
+			'email.max' => 'メールアドレスは255文字以内で入力してください。',
 			'ja_name.max' => 'JA名は255文字以内で入力してください。',
 		]);
 
 		AppUser::create([
+			'cognito_sub' => $request->cognito_sub,
 			'name' => $request->name,
 			'email' => $request->email,
 			'ja_name' => $request->ja_name,
-			'password' => Hash::make('password123'), // デフォルトパスワード
 		]);
 
 		return redirect()->route('user-management.index')
