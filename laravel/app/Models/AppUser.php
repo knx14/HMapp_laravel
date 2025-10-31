@@ -14,15 +14,13 @@ class AppUser extends Authenticatable
 	protected $table = 'app_users';
 
 	protected $fillable = [
+		'cognito_sub',
 		'name',
 		'email',
-		'password',
 		'ja_name',
 	];
 
 	protected $hidden = [
-		'password',
-		'remember_token',
 	];
 
 	/**

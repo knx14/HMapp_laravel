@@ -26,23 +26,29 @@ services:
       # - /var/www/html/node_modules
     networks:
       - laravel_network
+    dns:
+    - 8.8.8.8
+    - 1.1.1.1
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: 1
+      net.ipv6.conf.default.disable_ipv6: 1
 
-  # # MySQL データベース
-  # db:
-  #   image: mysql:8.0
-  #   container_name: laravel-db
-  #   restart: always
-  #   environment:
-  #     MYSQL_ROOT_PASSWORD: root
-  #     MYSQL_DATABASE: laravel
-  #     MYSQL_USER: laraveluser
-  #     MYSQL_PASSWORD: laravelpass
-  #   ports:
-  #     - "3306:3306"
-  #   volumes:
-  #     - mysql_data:/var/lib/mysql
-  #   networks:
-  #     - laravel_network
+  # MySQL データベース
+  db:
+    image: mysql:8.0
+    container_name: laravel-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: laraveluser
+      MYSQL_PASSWORD: laravelpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - laravel_network
 
   # phpMyAdmin (データベース管理ツール)
   phpmyadmin:
@@ -52,10 +58,12 @@ services:
     ports:
       - "8081:80"
     environment:
-      PMA_HOST: db-instance-hm.cpwk42kw0c6c.ap-northeast-1.rds.amazonaws.com
-      MYSQL_ROOT_PASSWORD: hmapprds20250601
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: root
+      #PMA_HOST: db-instance-hm.cpwk42kw0c6c.ap-northeast-1.rds.amazonaws.com
+      #MYSQL_ROOT_PASSWORD: hmapprds20250601
     depends_on:
-      # - db
+      - db
     networks:
       - laravel_network
 

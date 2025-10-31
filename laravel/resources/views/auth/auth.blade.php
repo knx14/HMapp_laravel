@@ -36,6 +36,12 @@
                         <input id="password_confirmation" name="password_confirmation" type="password" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                         @error('password_confirmation')<div class="text-red-500 text-xs mt-1">{{ $message }}</div>@enderror
                     </div>
+                    <div class="mt-4">
+                        <label for="admin_key" class="block text-sm font-medium text-gray-700">管理者キー</label>
+                        <input id="admin_key" name="admin_key" type="password" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50" autocomplete="off">
+                        @error('admin_key')<div class="text-red-500 text-xs mt-1">{{ $message }}</div>@enderror
+                        <p class="mt-1 text-xs text-gray-500">管理者キーを入力してください。管理者のみが新規登録できます。</p>
+                    </div>
                 @endif
                 @if($isLogin)
                 <div class="flex items-center mt-4">

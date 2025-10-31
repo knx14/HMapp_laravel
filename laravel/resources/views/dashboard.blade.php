@@ -36,7 +36,7 @@
         </div>
         <div>
             <div class="text-4xl font-bold text-gray-800 leading-none">
-                9,101
+                {{ number_format($completedCount) }}
             </div>
             <p class="text-gray-500 text-lg mt-2">演算処理数</p>
         </div>

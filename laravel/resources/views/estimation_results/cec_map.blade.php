@@ -301,10 +301,53 @@
         }
     }
 
+    // 重量(mg/100g)を当量(meq/100g)に換算する関数（PDF仕様に基づく）
+    function convertToMeq(value, parameterName) {
+        // 換算係数（PDF参照）
+        const conversionFactors = {
+            'CaO': 28,   // 1meq = 28mg
+            'MgO': 20,   // 1meq = 20mg
+            'K2O': 47    // 1meq = 47mg
+        };
+        
+        const factor = conversionFactors[parameterName];
+        if (!factor) {
+            // 換算係数が定義されていない場合はそのまま返す（既にmeq/100gであると仮定）
+            return value;
+        }
+        
+        // mg/100gをmeq/100gに換算: meq = mg / 係数
+        return value / factor;
+    }
+
     // CECに対する飽和度を計算する関数
-    function calculateSaturation(value, cec) {
+    // value: 成分の値（mg/100gまたはmeq/100g）
+    // cec: CEC値（meq/100g）
+    // parameterName: パラメータ名（'CaO', 'MgO', 'K2O'）
+    // unit: 単位（'mg/100g' または 'meq/100g'、nullの場合は既にmeq/100gと仮定）
+    function calculateSaturation(value, cec, parameterName, unit) {
         if (cec === 0) return 0; // ゼロ除算を避ける
-        return (value / cec) * 100;
+        
+        let valueInMeq = value;
+        
+        // 単位に基づいて処理
+        if (unit) {
+            const unitLower = unit.toLowerCase();
+            // unitに'meq'が含まれる場合は既にmeq/100gなので換算不要
+            if (unitLower.includes('meq')) {
+                // 既にmeq/100gなのでそのまま使用
+                valueInMeq = value;
+            } 
+            // unitに'mg'が含まれる場合はmg/100gなので換算が必要
+            else if (unitLower.includes('mg')) {
+                valueInMeq = convertToMeq(value, parameterName);
+            }
+            // unitが不明な場合は既にmeq/100gと仮定（後方互換性のため）
+        }
+        // unitがnull/undefinedの場合は既にmeq/100gと仮定
+        
+        // 飽和度(%) = (meq / CEC) × 100
+        return (valueInMeq / cec) * 100;
     }
 
     // 指定された地点のレーダーチャートを表示する関数
@@ -326,9 +369,16 @@
             
             const point = pointsRaw[pointIndex];
             const cec = point.cec || 0;
-            const k2o = point.values?.find(v => v.parameter === 'K2O')?.value || 0;
-            const cao = point.values?.find(v => v.parameter === 'CaO')?.value || 0;
-            const mgo = point.values?.find(v => v.parameter === 'MgO')?.value || 0;
+            const k2oValue = point.values?.find(v => v.parameter === 'K2O');
+            const caoValue = point.values?.find(v => v.parameter === 'CaO');
+            const mgoValue = point.values?.find(v => v.parameter === 'MgO');
+            
+            const k2o = k2oValue?.value || 0;
+            const k2oUnit = k2oValue?.unit || null;
+            const cao = caoValue?.value || 0;
+            const caoUnit = caoValue?.unit || null;
+            const mgo = mgoValue?.value || 0;
+            const mgoUnit = mgoValue?.unit || null;
             
             if (cec <= 0) {
                 chartInfo.textContent = 'この地点には有効なCECデータがありません。';
@@ -355,9 +405,9 @@
                     datasets: [{
                         label: `地点${pointIndex + 1}`,
                         data: [
-                            calculateSaturation(k2o, cec),
-                            calculateSaturation(cao, cec),
-                            calculateSaturation(mgo, cec)
+                            calculateSaturation(k2o, cec, 'K2O', k2oUnit),
+                            calculateSaturation(cao, cec, 'CaO', caoUnit),
+                            calculateSaturation(mgo, cec, 'MgO', mgoUnit)
                         ],
                         borderColor: 'rgb(59, 130, 246)',
                         backgroundColor: 'rgba(59, 130, 246, 0.2)',
@@ -407,14 +457,15 @@
             });
             
             // 詳細情報を表示
-            const k2oSat = calculateSaturation(k2o, cec).toFixed(1);
-            const caoSat = calculateSaturation(cao, cec).toFixed(1);
-            const mgoSat = calculateSaturation(mgo, cec).toFixed(1);
+            const k2oSat = calculateSaturation(k2o, cec, 'K2O', k2oUnit).toFixed(1);
+            const caoSat = calculateSaturation(cao, cec, 'CaO', caoUnit).toFixed(1);
+            const mgoSat = calculateSaturation(mgo, cec, 'MgO', mgoUnit).toFixed(1);
             
             chartInfo.innerHTML = `
                 <strong>地点${pointIndex + 1}</strong> の土壌分析結果（CECに対する飽和度）<br>
                 K2O: ${k2oSat}% | CaO: ${caoSat}% | MgO: ${mgoSat}%<br>
-                <small class="text-gray-500">CEC: ${cec} meq/100g</small>
+                <small class="text-gray-500">CEC: ${cec} meq/100g</small><br>
+                <small class="text-gray-400">※ 飽和度 = (成分のmeq/100g / CEC) × 100</small>
             `;
             
         } catch (error) {

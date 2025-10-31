@@ -19,7 +19,7 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        return view('auth.register');
+        return view('auth.auth');
     }
 
     /**
@@ -29,11 +29,27 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // 管理者キーの検証
+        $adminKey = env('ADMIN_REGISTRATION_KEY');
+        if (empty($adminKey)) {
+            return back()->withErrors([
+                'admin_key' => '管理者キーが設定されていません。システム管理者にお問い合わせください。',
+            ])->withInput($request->only('name', 'email'));
+        }
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'admin_key' => ['required', 'string'],
         ]);
+
+        // 管理者キーの一致確認
+        if ($request->admin_key !== $adminKey) {
+            return back()->withErrors([
+                'admin_key' => '管理者キーが正しくありません。',
+            ])->withInput($request->only('name', 'email'));
+        }
 
         $user = User::create([
             'name' => $request->name,

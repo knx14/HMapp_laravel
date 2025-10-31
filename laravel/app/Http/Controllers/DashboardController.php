@@ -15,10 +15,13 @@ class DashboardController extends Controller
         $userCount = AppUser::count();
         // アップロード数
         $uploadCount = Upload::count();
+        // 演算処理数（statusが'completed'のuploadsの数）
+        $completedCount = Upload::where('status', 'completed')->count();
 
         return view('dashboard', [
             'userCount' => $userCount,
             'uploadCount' => $uploadCount,
+            'completedCount' => $completedCount,
         ]);
     }
 } 

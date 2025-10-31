@@ -13,11 +13,10 @@ return new class extends Migration
 	{
 		Schema::create('app_users', function (Blueprint $table) {
 			$table->id();
-			$table->string('name');
-			$table->string('email')->unique();
-			$table->string('password');
+			$table->string('cognito_sub')->unique();
+			$table->string('name')->nullable();
+			$table->string('email')->nullable();
 			$table->string('ja_name')->nullable();
-			$table->rememberToken();
 			$table->timestamps();
 		});
 	}
