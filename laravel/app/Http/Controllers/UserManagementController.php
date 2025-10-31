@@ -26,7 +26,7 @@ class UserManagementController extends Controller
 			$query->where('cognito_sub', 'like', '%' . $cognitoSub . '%');
 		}
 
-		$users = $query->orderByDesc('id')->get();
+		$users = $query->orderByDesc('id')->paginate(20);
 
 		return view('user_management.index', [
 			'users' => $users,
