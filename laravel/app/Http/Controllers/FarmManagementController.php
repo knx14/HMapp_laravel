@@ -104,6 +104,9 @@ class FarmManagementController extends Controller
                 ->withInput();
         }
 
+        // GPS座標を時計回りにソート
+        $gpsCoordinates = $this->sortCoordinatesClockwise($gpsCoordinates);
+
         // 圃場データを作成
         $farmData = [
             'app_user_id' => $appUser->id,
@@ -299,5 +302,55 @@ class FarmManagementController extends Controller
         }
 
         return $inside;
+    }
+
+    /**
+     * GPS座標を時計回りにソートする
+     * 中心点からの角度を計算してソートすることで、登録順に関わらず
+     * 正しい順序でポリゴンが描画されるようにする
+     * 
+     * @param array $coordinates [[lat, lng], ...] の形式
+     * @return array ソート済み座標配列
+     */
+    private function sortCoordinatesClockwise(array $coordinates): array
+    {
+        if (count($coordinates) < 3) {
+            return $coordinates;
+        }
+
+        // 1. 中心点を計算（全ての点の平均）
+        $sumLat = 0;
+        $sumLng = 0;
+        foreach ($coordinates as $coord) {
+            $sumLat += $coord[0];  // lat
+            $sumLng += $coord[1];  // lng
+        }
+        $centerLat = $sumLat / count($coordinates);
+        $centerLng = $sumLng / count($coordinates);
+
+        // 2. 各点を中心からの角度でソート（時計回り = 降順）
+        usort($coordinates, function ($a, $b) use ($centerLat, $centerLng) {
+            // 点aの角度を計算
+            $deltaLatA = $a[0] - $centerLat;
+            $deltaLngA = $a[1] - $centerLng;
+            $angleA = atan2($deltaLatA, $deltaLngA);
+            
+            // 点bの角度を計算
+            $deltaLatB = $b[0] - $centerLat;
+            $deltaLngB = $b[1] - $centerLng;
+            $angleB = atan2($deltaLatB, $deltaLngB);
+            
+            // 角度が同じ場合（一直線上の点）は距離でソート（近い順）
+            if (abs($angleA - $angleB) < 0.0001) {
+                $distanceA = sqrt($deltaLatA * $deltaLatA + $deltaLngA * $deltaLngA);
+                $distanceB = sqrt($deltaLatB * $deltaLatB + $deltaLngB * $deltaLngB);
+                return $distanceB <=> $distanceA;  // 距離の降順（外側の点を先に）
+            }
+            
+            // 降順でソート（時計回り）
+            return $angleB <=> $angleA;
+        });
+
+        return $coordinates;
     }
 }
