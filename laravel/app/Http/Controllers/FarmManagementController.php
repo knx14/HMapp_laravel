@@ -264,9 +264,9 @@ class FarmManagementController extends Controller
 
                 // 各測定値を取得
                 foreach ($result->resultValues as $value) {
-                    $measurementData['values'][$value->parameter] = [
-                        'value' => $value->value,
-                        'unit' => $value->unit
+                    $measurementData['values'][$value->parameter_name] = [
+                        'value' => $value->parameter_value,
+                        'unit' => $value->unit ?? null
                     ];
                 }
 

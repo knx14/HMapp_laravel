@@ -66,22 +66,22 @@ class EstimationResultsController extends Controller
 
         // result_values から全パラメータを取得してIDごとにグルーピング
         $allValues = ResultValue::whereIn('analysis_result_id', $analysisIds)
-            ->get(['analysis_result_id', 'parameter', 'value', 'unit'])
+            ->get(['analysis_result_id', 'parameter_name', 'parameter_value', 'unit'])
             ->groupBy('analysis_result_id');
 
         // フロントに渡す形 {lat, lng, values: [{parameter, value, unit}], cec} の配列
         $points = $analysisPoints->map(function ($p) use ($allValues) {
             $valuesForPoint = $allValues->get($p->id, collect());
-            $cecValue = optional($valuesForPoint->firstWhere('parameter', 'CEC'))->value;
+            $cecValue = optional($valuesForPoint->firstWhere('parameter_name', 'CEC'))->parameter_value;
             return [
                 'lat' => (float) $p->latitude,
                 'lng' => (float) $p->longitude,
                 'cec' => is_null($cecValue) ? null : (float) $cecValue,
                 'values' => $valuesForPoint->map(function ($rv) {
                     return [
-                        'parameter' => $rv->parameter,
-                        'value' => (float) $rv->value,
-                        'unit' => $rv->unit,
+                        'parameter' => $rv->parameter_name,
+                        'value' => (float) $rv->parameter_value,
+                        'unit' => $rv->unit ?? null,
                     ];
                 })->values(),
             ];

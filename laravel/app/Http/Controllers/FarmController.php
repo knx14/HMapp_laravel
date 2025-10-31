@@ -47,9 +47,9 @@ class FarmController extends Controller
                 'longitude' => (float) $ar->longitude,
                 'results' => $ar->resultValues->map(function ($rv) {
                     return [
-                        'parameter' => $rv->parameter,
-                        'value' => (float) $rv->value,
-                        'unit' => $rv->unit,
+                        'parameter' => $rv->parameter_name,
+                        'value' => (float) $rv->parameter_value,
+                        'unit' => $rv->unit ?? null,
                     ];
                 })->values(),
             ];
