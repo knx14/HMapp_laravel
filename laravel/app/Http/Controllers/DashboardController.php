@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Measurement;
 use App\Models\AppUser;
 use App\Models\Upload;
 

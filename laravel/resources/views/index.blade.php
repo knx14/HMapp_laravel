@@ -293,7 +293,6 @@
                 @guest
                    <li><a href="{{ route('login') }}" class="text-blue-600 hover:underline">ログイン/新規登録</a></li>
                 @else
-                   <li><a href="{{ route('csv.upload') }}" class="text-blue-600 hover:underline">解析する</a></li>
                    <li>
                        <form method="POST" action="{{ route('logout') }}">
                           @csrf
