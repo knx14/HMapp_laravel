@@ -1,0 +1,40 @@
+# PHP-FPM ベースのイメージ (Alpine版) - 本番環境用
+FROM php:8.2-fpm-alpine
+
+# 必要なパッケージをインストール
+# - zip, unzip: Composerで必要
+# - curl: Composerのダウンロードに必要
+# - libpng-dev, libjpeg-dev, libfreetype6-dev: GD拡張の依存関係
+# - libonig-dev: mbstring拡張の依存関係
+RUN apk add --no-cache \
+    zip \
+    unzip \
+    curl \
+    libpng-dev \
+    libjpeg-dev \
+    freetype-dev \
+    oniguruma-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql bcmath mbstring \
+    && apk del --no-cache libpng-dev libjpeg-dev freetype-dev oniguruma-dev \
+    && rm -rf /var/cache/apk/*
+
+# Composer のインストール
+COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
+
+# 作業ディレクトリの設定
+WORKDIR /var/www/html
+
+# Laravelのキャッシュやログ書き込みのためのパーミッション設定
+# www-data は多くのPHP-FPMコンテナで使われるユーザー
+# ストレージとキャッシュディレクトリのパーミッションを設定
+RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# PHP-FPM のデフォルトポートを公開
+EXPOSE 9000
+
+# コンテナ起動時のデフォルトコマンド (php-fpmを起動)
+CMD ["php-fpm"]
+
