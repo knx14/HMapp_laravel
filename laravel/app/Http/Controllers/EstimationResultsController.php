@@ -55,8 +55,10 @@ class EstimationResultsController extends Controller
         $farm = Farm::findOrFail($farmId);
         $upload = Upload::where('id', $uploadId)->where('farm_id', $farm->id)->firstOrFail();
 
-        // 同一圃場のすべてのアップロードIDを取得
-        $uploadIds = Upload::where('farm_id', $farm->id)->pluck('id');
+        // 選択した日付と同じ日付のアップロードIDを取得（同じ日に複数点取得したデータをまとめて表示）
+        $uploadIds = Upload::where('farm_id', $farm->id)
+            ->where('measurement_date', $upload->measurement_date)
+            ->pluck('id');
 
         // analysis_results から該当アップロード群の座標とIDを取得
         $analysisPoints = AnalysisResult::whereIn('upload_id', $uploadIds)
