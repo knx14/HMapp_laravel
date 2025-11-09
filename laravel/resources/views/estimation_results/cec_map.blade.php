@@ -6,6 +6,16 @@
 @section('content')
 <div class="py-8">
     <div class="max-w-7xl mx-auto px-4">
+        <!-- 戻るボタン -->
+        <div class="mb-4">
+            <a href="{{ route('estimation-results.farm-dates', ['farm' => $farm->id]) }}" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-semibold">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+                日付選択に戻る
+            </a>
+        </div>
+
         <div class="bg-white rounded-2xl shadow p-6 mb-6">
             <h2 class="text-xl font-semibold mb-2">圃場情報</h2>
             <p class="text-gray-700"><span class="font-semibold">圃場ID:</span> {{ $farm->id }}</p>
