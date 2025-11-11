@@ -40,6 +40,22 @@ Route::middleware(['auth'])->group(function () {
         ->whereNumber('farm')
         ->whereNumber('upload')
         ->name('estimation-results.cec');
+    
+    // 結果入力
+    Route::get('/estimation-results/farms/{farm}/input', [\App\Http\Controllers\EstimationResultsController::class, 'inputResult'])
+        ->whereNumber('farm')
+        ->name('estimation-results.input');
+    Route::post('/estimation-results/farms/{farm}/analysis-result', [\App\Http\Controllers\EstimationResultsController::class, 'storeAnalysisResult'])
+        ->whereNumber('farm')
+        ->name('estimation-results.store-analysis-result');
+    Route::get('/estimation-results/farms/{farm}/analysis-results/{analysisResult}/input-value', [\App\Http\Controllers\EstimationResultsController::class, 'inputResultValue'])
+        ->whereNumber('farm')
+        ->whereNumber('analysisResult')
+        ->name('estimation-results.input-result-value');
+    Route::post('/estimation-results/farms/{farm}/analysis-results/{analysisResult}/result-value', [\App\Http\Controllers\EstimationResultsController::class, 'storeResultValue'])
+        ->whereNumber('farm')
+        ->whereNumber('analysisResult')
+        ->name('estimation-results.store-result-value');
 });
 
 // 圃場の境界線データを取得するAPIエンドポイント（認証不要）

@@ -175,6 +175,7 @@ class FarmManagementController extends Controller
 
     /**
      * 指定された圃場内の測定データを取得する
+     * データベースのリレーションシップを使用して直接取得
      *
      * @param int $farmId
      * @return JsonResponse
@@ -192,23 +193,35 @@ class FarmManagementController extends Controller
                    ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         }
 
-        if (!$farm->boundary_polygon) {
-            return response()->json([
-                'error' => 'この圃場には境界線データが設定されていません。',
-                'message' => 'No boundary data available'
-            ], 404)->header('Access-Control-Allow-Origin', '*')
-                   ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                   ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        }
+        // データベースのリレーションシップを使用して圃場に関連する測定データを取得
+        // AnalysisResult → Upload → Farm のリレーションを利用
+        $analysisResults = AnalysisResult::with('resultValues')
+            ->whereHas('upload', function ($query) use ($farmId) {
+                $query->where('farm_id', $farmId);
+            })
+            ->get();
 
-        // 圃場の境界線データを正規化
-        $boundaryData = $farm->boundary_polygon;
-        if (is_string($boundaryData)) {
-            $boundaryData = json_decode($boundaryData, true);
-        }
+        $measurements = [];
 
-        // 境界内の測定地点を取得
-        $measurements = $this->getMeasurementsInBoundary($boundaryData);
+        foreach ($analysisResults as $result) {
+            $measurementData = [
+                'id' => $result->id,
+                'latitude' => $result->latitude,
+                'longitude' => $result->longitude,
+                'sensor_info' => $result->sensor_info,
+                'values' => []
+            ];
+
+            // 各測定値を取得
+            foreach ($result->resultValues as $value) {
+                $measurementData['values'][$value->parameter_name] = [
+                    'value' => $value->parameter_value,
+                    'unit' => $value->unit ?? null
+                ];
+            }
+
+            $measurements[] = $measurementData;
+        }
 
         return response()->json([
             'success' => true,
@@ -220,88 +233,6 @@ class FarmManagementController extends Controller
         ])->header('Access-Control-Allow-Origin', '*')
           ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
           ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    }
-
-    /**
-     * 境界内の測定データを取得
-     *
-     * @param array $boundaryData
-     * @return array
-     */
-    private function getMeasurementsInBoundary(array $boundaryData): array
-    {
-        // 境界線を正規化
-        $polygon = [];
-        foreach ($boundaryData as $point) {
-            if (is_array($point) && count($point) >= 2) {
-                $polygon[] = [
-                    'lat' => is_array($point) ? (float)$point[0] : (float)$point['lat'],
-                    'lng' => is_array($point) ? (float)$point[1] : (float)$point['lng']
-                ];
-            } elseif (isset($point['lat']) && isset($point['lng'])) {
-                $polygon[] = [
-                    'lat' => (float)$point['lat'],
-                    'lng' => (float)$point['lng']
-                ];
-            }
-        }
-
-        if (empty($polygon)) {
-            return [];
-        }
-
-        // 全ての測定結果を取得
-        $analysisResults = AnalysisResult::with('resultValues')->get();
-        $measurements = [];
-
-        foreach ($analysisResults as $result) {
-            // 点が境界内にあるかチェック（簡易版：境界のバウンディングボックス内かチェック）
-            if ($this->isPointInPolygon($result->latitude, $result->longitude, $polygon)) {
-                $measurementData = [
-                    'id' => $result->id,
-                    'latitude' => $result->latitude,
-                    'longitude' => $result->longitude,
-                    'sensor_info' => $result->sensor_info,
-                    'values' => []
-                ];
-
-                // 各測定値を取得
-                foreach ($result->resultValues as $value) {
-                    $measurementData['values'][$value->parameter_name] = [
-                        'value' => $value->parameter_value,
-                        'unit' => $value->unit ?? null
-                    ];
-                }
-
-                $measurements[] = $measurementData;
-            }
-        }
-
-        return $measurements;
-    }
-
-    /**
-     * 点が多角形内にあるかチェック（レイキャスティングアルゴリズム）
-     *
-     * @param float $lat
-     * @param float $lng
-     * @param array $polygon
-     * @return bool
-     */
-    private function isPointInPolygon(float $lat, float $lng, array $polygon): bool
-    {
-        $inside = false;
-        $j = count($polygon) - 1;
-
-        for ($i = 0; $i < count($polygon); $i++) {
-            if (($polygon[$i]['lng'] > $lng) != ($polygon[$j]['lng'] > $lng) &&
-                $lat < ($polygon[$j]['lat'] - $polygon[$i]['lat']) * ($lng - $polygon[$i]['lng']) / ($polygon[$j]['lng'] - $polygon[$i]['lng']) + $polygon[$i]['lat']) {
-                $inside = !$inside;
-            }
-            $j = $i;
-        }
-
-        return $inside;
     }
 
     /**
