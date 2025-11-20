@@ -93,4 +93,4 @@ jobs:
       - name: Cleanup SSH Key
         if: always()
         run: |
-          
+          rm -f ~/.ssh/deploy_key
