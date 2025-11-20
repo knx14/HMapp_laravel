@@ -1,74 +1,59 @@
-name: Deploy Laravel to EC2
-
-on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'laravel/**'
-      - 'docker/**'
-      - 'docker-compose.production.yml'
-  workflow_dispatch:
-
-jobs:
-  deploy:
-    name: Deploy to EC2
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Deploy to EC2
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
-          EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
-        run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << 'ENDSSH'
-            set -e
-            
-            cd ${EC2_APP_DIR}
-            
-            echo "=== Git Pull ==="
-            git fetch origin
-            git reset --hard origin/main
-            
-            echo "=== Composer Install ==="
-            docker compose -f docker-compose.production.yml exec -T php composer install \
-              --optimize-autoloader \
-              --no-dev \
-              --no-interaction
-            
-            echo "=== Database Migration ==="
-            docker compose -f docker-compose.production.yml exec -T php php artisan migrate --force
-            
-            echo "=== Clear Caches ==="
-            docker compose -f docker-compose.production.yml exec -T php php artisan config:clear
-            docker compose -f docker-compose.production.yml exec -T php php artisan route:clear
-            docker compose -f docker-compose.production.yml exec -T php php artisan view:clear
-            docker compose -f docker-compose.production.yml exec -T php php artisan cache:clear
-            
-            echo "=== Optimize Application ==="
-            docker compose -f docker-compose.production.yml exec -T php php artisan config:cache
-            docker compose -f docker-compose.production.yml exec -T php php artisan route:cache
-            docker compose -f docker-compose.production.yml exec -T php php artisan view:cache
-            
-            echo "=== Restart Containers ==="
-            docker compose -f docker-compose.production.yml restart php
-            docker compose -f docker-compose.production.yml restart nginx
-            
-            echo "=== Deployment Complete ==="
-          ENDSSH
-
-      - name: Cleanup SSH Key
-        if: always()
-        run: |
-          rm -f ~/.ssh/deploy_key
+- name: Deploy to EC2
+  env:
+    EC2_HOST: ${{ secrets.EC2_HOST }}
+    EC2_USER: ${{ secrets.EC2_USER }}
+    EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
+  run: |
+    ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << 'ENDSSH'
+      set -e
+      
+      # ディレクトリの存在確認
+      if [ ! -d "${EC2_APP_DIR}" ]; then
+        echo "Error: Directory ${EC2_APP_DIR} does not exist"
+        exit 1
+      fi
+      
+      cd "${EC2_APP_DIR}" || {
+        echo "Error: Failed to change directory to ${EC2_APP_DIR}"
+        exit 1
+      }
+      
+      # 現在のディレクトリを確認（デバッグ用）
+      echo "Current directory: $(pwd)"
+      
+      # Gitリポジトリの確認
+      if [ ! -d ".git" ]; then
+        echo "Error: .git directory not found in ${EC2_APP_DIR}"
+        exit 1
+      fi
+      
+      echo "=== Git Pull ==="
+      git fetch origin
+      git reset --hard origin/main
+      
+      echo "=== Composer Install ==="
+      docker compose -f docker-compose.production.yml exec -T php composer install \
+        --optimize-autoloader \
+        --no-dev \
+        --no-interaction
+      
+      echo "=== Database Migration ==="
+      docker compose -f docker-compose.production.yml exec -T php php artisan migrate --force
+      
+      echo "=== Clear Caches ==="
+      docker compose -f docker-compose.production.yml exec -T php php artisan config:clear
+      docker compose -f docker-compose.production.yml exec -T php php artisan route:clear
+      docker compose -f docker-compose.production.yml exec -T php php artisan view:clear
+      docker compose -f docker-compose.production.yml exec -T php php artisan cache:clear
+      
+      echo "=== Optimize Application ==="
+      docker compose -f docker-compose.production.yml exec -T php php artisan config:cache
+      docker compose -f docker-compose.production.yml exec -T php php artisan route:cache
+      docker compose -f docker-compose.production.yml exec -T php php artisan view:cache
+      
+      echo "=== Restart Containers ==="
+      docker compose -f docker-compose.production.yml restart php
+      docker compose -f docker-compose.production.yml restart nginx
+      
+      echo "=== Deployment Complete ==="
+    ENDSSH
