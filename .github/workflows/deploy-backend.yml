@@ -43,20 +43,27 @@ jobs:
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-northeast-1
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_DEFAULT_REGION,AWS_ACCOUNT_ID,EC2_APP_DIR
           script: |
             # 1. AWSへログイン (ECRからダウンロードするため)
             # ※ここで secrets.AWS_ACCOUNT_ID を使います
-            aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-1.amazonaws.com
+            aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.ap-northeast-1.amazonaws.com
             
             # 2. アプリのディレクトリへ移動
-            cd ${{ secrets.EC2_APP_DIR }}
+            cd $EC2_APP_DIR
             
             # 3. 最新のイメージをダウンロード (ここもリポジトリ名を合わせました)
-            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-1.amazonaws.com/laravel-admin-app:latest
+            docker pull $AWS_ACCOUNT_ID.dkr.ecr.ap-northeast-1.amazonaws.com/laravel-admin-app:latest
             
             # 4. コンテナを作り直す
             # (Step3で修正した docker-compose.production.yml が使われます)
