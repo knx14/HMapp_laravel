@@ -83,6 +83,9 @@ jobs:
           docker compose -f docker-compose.production.yml exec -T php php artisan route:cache
           docker compose -f docker-compose.production.yml exec -T php php artisan view:cache
           
+          echo "=== Sync Assets ==="
+          docker compose -f docker-compose.production.yml cp php:/var/www/html/public/. ./laravel/public/
+          
           echo "=== Restart Containers ==="
           docker compose -f docker-compose.production.yml restart php
           docker compose -f docker-compose.production.yml restart nginx
