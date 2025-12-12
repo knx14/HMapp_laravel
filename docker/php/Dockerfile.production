@@ -1,11 +1,25 @@
-# PHP-FPM ベースのイメージ (Alpine版) - 本番環境用
+# ==========================================
+# Stage 1: フロントエンドのビルド (Node.js)
+# ==========================================
+FROM node:20-alpine as node-build
+
+WORKDIR /app
+
+# ソースコードを全てコピー
+COPY . .
+
+# npmパッケージをインストールしてビルド
+# これで public/build にCSS/JSが生成されます
+RUN npm ci
+RUN npm run build
+
+
+# ==========================================
+# Stage 2: 本番用イメージの作成 (PHP)
+# ==========================================
 FROM php:8.2-fpm-alpine
 
-# 必要なパッケージをインストール
-# - zip, unzip: Composerで必要
-# - curl: Composerのダウンロードに必要
-# - libpng-dev, libjpeg-dev, libfreetype6-dev: GD拡張の依存関係
-# - libonig-dev: mbstring拡張の依存関係
+# --- 1. 必要なパッケージインストール (元の記述と同じ) ---
 RUN apk add --no-cache \
     zip \
     unzip \
@@ -25,16 +39,24 @@ COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
 # 作業ディレクトリの設定
 WORKDIR /var/www/html
 
-# Laravelのキャッシュやログ書き込みのためのパーミッション設定
-# www-data は多くのPHP-FPMコンテナで使われるユーザー
-# ストレージとキャッシュディレクトリのパーミッションを設定
-RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+# --- 2. ソースコードのコピー (ここが重要！) ---
+# ホスト(GitHub Actions)にあるコードを、コンテナの中にコピーします
+COPY . .
+
+# --- 3. バックエンドの依存関係インストール ---
+# 本番用に軽量化してインストール
+RUN composer install --optimize-autoloader --no-dev
+
+# --- 4. ビルド済みのアセット(CSS/JS)を持ってくる ---
+# Stage 1 (node-build) で作った public/build フォルダを、ここにコピー
+COPY --from=node-build /app/public/build /var/www/html/public/build
+
+# --- 5. パーミッション設定 ---
+# storage と bootstrap/cache に書き込み権限を与える
+RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# PHP-FPM のデフォルトポートを公開
+# ポート公開
 EXPOSE 9000
 
-# コンテナ起動時のデフォルトコマンド (php-fpmを起動)
 CMD ["php-fpm"]
-
