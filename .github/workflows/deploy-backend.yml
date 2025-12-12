@@ -1,99 +1,75 @@
-name: Deploy Laravel to EC2
+name: Deploy Laravel via ECR
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'laravel/**'
-      - 'docker/**'
-      - 'docker-compose.production.yml'
-      - '.github/**'
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
-  deploy:
-    name: Deploy to EC2
+  # === Job 1: ビルドしてECRへ送る ===
+  build-and-push:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+      # AWSへの認証 (Secretsに登録した鍵を使います)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-1
 
-      - name: Deploy to EC2
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # Dockerイメージを作って、ECRにアップロード
+      - name: Build, tag, and push image to Amazon ECR
         env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
-          EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          # ▼ ここをあなたが決めたリポジトリ名にしています
+          ECR_REPOSITORY: laravel-admin-app
+          IMAGE_TAG: latest
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << ENDSSH
-          set -e
-          
-          # 環境変数を確認（デバッグ用）
-          echo "EC2_APP_DIR: ${EC2_APP_DIR}"
-          
-          # ディレクトリの存在確認
-          if [ ! -d "${EC2_APP_DIR}" ]; then
-            echo "Error: Directory ${EC2_APP_DIR} does not exist"
-            exit 1
-          fi
-          
-          cd "${EC2_APP_DIR}" || {
-            echo "Error: Failed to change directory to ${EC2_APP_DIR}"
-            exit 1
-          }
-          
-          # 現在のディレクトリを確認（デバッグ用）
-          echo "Current directory: $(pwd)"
-          
-          # Gitリポジトリの確認
-          if [ ! -d ".git" ]; then
-            echo "Error: .git directory not found in ${EC2_APP_DIR}"
-            exit 1
-          fi
-          
-          echo "=== Git Pull ==="
-          git fetch origin
-          git reset --hard origin/main
-          
-          echo "=== Composer Install ==="
-          docker compose -f docker-compose.production.yml exec -T php composer install \
-            --optimize-autoloader \
-            --no-dev \
-            --no-interaction
-          
-          echo "=== Database Migration ==="
-          docker compose -f docker-compose.production.yml exec -T php php artisan migrate --force
-          
-          echo "=== Clear Caches ==="
-          docker compose -f docker-compose.production.yml exec -T php php artisan config:clear
-          docker compose -f docker-compose.production.yml exec -T php php artisan route:clear
-          docker compose -f docker-compose.production.yml exec -T php php artisan view:clear
-          docker compose -f docker-compose.production.yml exec -T php php artisan cache:clear
-          
-          echo "=== Optimize Application ==="
-          docker compose -f docker-compose.production.yml exec -T php php artisan config:cache
-          docker compose -f docker-compose.production.yml exec -T php php artisan route:cache
-          docker compose -f docker-compose.production.yml exec -T php php artisan view:cache
-          
-          echo "=== Sync Assets ==="
-          docker compose -f docker-compose.production.yml cp php:/var/www/html/public/. ./laravel/public/
-          
-          echo "=== Restart Containers ==="
-          docker compose -f docker-compose.production.yml restart php
-          docker compose -f docker-compose.production.yml restart nginx
-          
-          echo "=== Deployment Complete ==="
-          ENDSSH
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f laravel/Dockerfile ./laravel
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Cleanup SSH Key
-        if: always()
-        run: |
-          rm -f ~/.ssh/deploy_key
+  # === Job 2: EC2で新しいイメージに入れ替える ===
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # 1. AWSへログイン (ECRからダウンロードするため)
+            # ※ここで secrets.AWS_ACCOUNT_ID を使います
+            aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-1.amazonaws.com
+            
+            # 2. アプリのディレクトリへ移動
+            cd ${{ secrets.EC2_APP_DIR }}
+            
+            # 3. 最新のイメージをダウンロード (ここもリポジトリ名を合わせました)
+            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-1.amazonaws.com/laravel-admin-app:latest
+            
+            # 4. コンテナを作り直す
+            # (Step3で修正した docker-compose.production.yml が使われます)
+            docker compose -f docker-compose.production.yml down
+            docker compose -f docker-compose.production.yml up -d
+            
+            # 5. マイグレーションとキャッシュクリア
+            # (Git Pullをしないので、docker内のコードは常に最新です)
+            docker compose -f docker-compose.production.yml exec -T php php artisan migrate --force
+            docker compose -f docker-compose.production.yml exec -T php php artisan config:clear
+            docker compose -f docker-compose.production.yml exec -T php php artisan cache:clear
+            docker compose -f docker-compose.production.yml exec -T php php artisan config:cache
+            docker compose -f docker-compose.production.yml exec -T php php artisan route:cache
+            docker compose -f docker-compose.production.yml exec -T php php artisan view:cache
+            echo "=== Sync Assets ==="
+            docker compose -f docker-compose.production.yml cp php:/var/www/html/public/. ./laravel/public/
