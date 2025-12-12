@@ -20,17 +20,25 @@ RUN npm run build
 FROM php:8.2-fpm-alpine
 
 # --- 1. 必要なパッケージインストール (元の記述と同じ) ---
-RUN apk update && apk add --no-cache \
+# まず、実行時にずっと必要なライブラリをインストール（これは削除しません）
+RUN apk add --no-cache \
     zip \
     unzip \
     curl \
+    libpng \
+    libjpeg-turbo \
+    freetype \
+    oniguruma
+
+# 次に、ビルドの時だけ必要なものを入れ、拡張機能を入れ、最後にビルド用だけ削除する
+RUN apk add --no-cache --virtual .build-deps \
     libpng-dev \
     libjpeg-turbo-dev \
     freetype-dev \
     oniguruma-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql bcmath mbstring \
-    && apk del --no-cache libpng-dev libjpeg-turbo-dev freetype-dev oniguruma-dev \
+    && apk del .build-deps \
     && rm -rf /var/cache/apk/*
 
 # Composer のインストール
