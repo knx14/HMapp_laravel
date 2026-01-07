@@ -28,3 +28,6 @@ Route::get('/uploads/{uploadId}/analysis-data', [FarmController::class, 'analysi
 
 // 圃場の境界線データを取得するAPIエンドポイント（認証不要）
 Route::get('/farms/{farmId}/boundary', [FarmManagementController::class, 'getBoundary'])->middleware('web');
+
+// API v1 ルート
+Route::prefix('v1')->group(base_path('routes/api/v1.php'));
