@@ -20,6 +20,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+// API v1 ルート（より具体的なルートを先に定義）
+Route::prefix('v1')->group(function () {
+    require base_path('routes/api/v1.php');
+});
+
 // 分析サマリー一覧API
 Route::get('/analysis/summary', [FarmController::class, 'analysisSummary']);
 
@@ -28,6 +33,3 @@ Route::get('/uploads/{uploadId}/analysis-data', [FarmController::class, 'analysi
 
 // 圃場の境界線データを取得するAPIエンドポイント（認証不要）
 Route::get('/farms/{farmId}/boundary', [FarmManagementController::class, 'getBoundary'])->middleware('web');
-
-// API v1 ルート
-Route::prefix('v1')->group(base_path('routes/api/v1.php'));
