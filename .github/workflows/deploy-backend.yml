@@ -75,6 +75,7 @@ jobs:
             docker compose -f docker-compose.production.yml exec -T php php artisan migrate --force
             docker compose -f docker-compose.production.yml exec -T php php artisan config:clear
             docker compose -f docker-compose.production.yml exec -T php php artisan cache:clear
+            docker compose -f docker-compose.production.yml exec -T php php artisan route:clear
             docker compose -f docker-compose.production.yml exec -T php php artisan config:cache
             docker compose -f docker-compose.production.yml exec -T php php artisan route:cache
             docker compose -f docker-compose.production.yml exec -T php php artisan view:cache
