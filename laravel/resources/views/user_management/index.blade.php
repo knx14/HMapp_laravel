@@ -50,13 +50,6 @@
                         <h2 class="text-xl font-semibold text-gray-800">ユーザー一覧</h2>
                         <p class="text-gray-600 mt-1">全{{ $users->total() }}件中 {{ $users->firstItem() ?? 0 }}-{{ $users->lastItem() ?? 0 }}件を表示</p>
                     </div>
-                    <a href="{{ route('user-management.create') }}" 
-                       class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        新規ユーザー登録
-                    </a>
                 </div>
             </div>
 
