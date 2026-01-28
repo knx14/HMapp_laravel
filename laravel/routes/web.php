@@ -23,8 +23,6 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth'])->group(function () {
 	Route::get('/users', [UserManagementController::class, 'index'])->name('user-management.index');
-	Route::get('/users/create', [UserManagementController::class, 'create'])->name('user-management.create');
-	Route::post('/users', [UserManagementController::class, 'store'])->name('user-management.store');
 	Route::get('/farms', [FarmManagementController::class, 'index'])->name('farm-management.index');
 	Route::get('/farms/create', [FarmManagementController::class, 'create'])->name('farm-management.create');
 	Route::post('/farms', [FarmManagementController::class, 'store'])->name('farm-management.store');
