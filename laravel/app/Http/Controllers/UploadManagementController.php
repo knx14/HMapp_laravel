@@ -7,6 +7,7 @@ use App\Models\Farm;
 use App\Models\AppUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class UploadManagementController extends Controller
 {
@@ -120,5 +121,28 @@ class UploadManagementController extends Controller
                 ->withErrors(['error' => 'アップロードの登録中にエラーが発生しました。'])
                 ->withInput();
         }
+    }
+
+    /**
+     * S3からCSVファイルをダウンロード
+     * EC2のIAMロールを使用して認証
+     */
+    public function download($id)
+    {
+        $upload = Upload::findOrFail($id);
+        
+        // S3の設定を取得（IAMロールが自動的に使用される）
+        $disk = Storage::disk('s3');
+        
+        // ファイルが存在するか確認
+        if (!$disk->exists($upload->file_path)) {
+            abort(404, 'ファイルが見つかりませんでした。');
+        }
+        
+        // ファイル名を取得（パスから最後の部分を取得）
+        $fileName = basename($upload->file_path);
+        
+        // S3から直接ダウンロード（IAMロールで認証）
+        return $disk->download($upload->file_path, $fileName);
     }
 }
