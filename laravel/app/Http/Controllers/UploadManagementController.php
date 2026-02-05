@@ -142,7 +142,13 @@ class UploadManagementController extends Controller
         // ファイル名を取得（パスから最後の部分を取得）
         $fileName = basename($upload->file_path);
         
-        // S3から直接ダウンロード（IAMロールで認証）
-        return $disk->download($upload->file_path, $fileName);
+        // S3からファイルを取得してダウンロードレスポンスを返す
+        // response()->streamDownload()を使用してメモリ効率を向上
+        return response()->streamDownload(function () use ($disk, $upload) {
+            echo $disk->get($upload->file_path);
+        }, $fileName, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        ]);
     }
 }
