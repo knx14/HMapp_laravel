@@ -126,26 +126,46 @@ class UploadManagementController extends Controller
     /**
      * S3からCSVファイルをダウンロード
      * EC2のIAMロールを使用して認証
+     * file_pathをクエリパラメータで受け取り、DB接続不要でS3から直接ダウンロード
      */
-    public function download($id)
+    public function download(Request $request)
     {
-        $upload = Upload::findOrFail($id);
+        $filePath = $request->query('path');
+        
+        if (!$filePath) {
+            abort(400, 'ファイルパスが指定されていません。');
+        }
+        
+        // セキュリティ: パストラバーサル攻撃を防ぐため、相対パスや危険な文字をチェック
+        if (strpos($filePath, '..') !== false || strpos($filePath, "\0") !== false) {
+            abort(400, '無効なファイルパスです。');
+        }
         
         // S3の設定を取得（IAMロールが自動的に使用される）
         $disk = Storage::disk('s3');
         
         // ファイルが存在するか確認
-        if (!$disk->exists($upload->file_path)) {
+        if (!$disk->exists($filePath)) {
             abort(404, 'ファイルが見つかりませんでした。');
         }
         
         // ファイル名を取得（パスから最後の部分を取得）
-        $fileName = basename($upload->file_path);
+        $fileName = basename($filePath);
         
-        // S3からファイルを取得してダウンロードレスポンスを返す
-        // response()->streamDownload()を使用してメモリ効率を向上
-        return response()->streamDownload(function () use ($disk, $upload) {
-            echo $disk->get($upload->file_path);
+        // S3からストリームで読み出してそのまま返す（大きいCSVでもメモリに乗せない）
+        $stream = $disk->readStream($filePath);
+        if ($stream === false) {
+            abort(500, 'ファイルストリームの取得に失敗しました。');
+        }
+
+        return response()->streamDownload(function () use ($stream) {
+            try {
+                fpassthru($stream);
+            } finally {
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            }
         }, $fileName, [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $fileName . '"',

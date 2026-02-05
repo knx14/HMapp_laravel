@@ -211,7 +211,7 @@ function showUploadDetail(uploadId) {
                 <label class="block text-sm font-semibold text-gray-700 mb-1">ファイルパス</label>
                 <div class="flex items-center gap-2">
                     <p class="text-gray-900 break-all flex-1">${upload.file_path}</p>
-                    <a href="/uploads/${upload.id}/download" 
+                    <a href="/uploads/download?path=${encodeURIComponent(upload.file_path)}" 
                        class="inline-flex items-center text-blue-600 hover:text-blue-800 transition" 
                        title="ファイルをダウンロード"
                        onclick="event.stopPropagation();">
