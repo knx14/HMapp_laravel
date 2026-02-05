@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Farm\StoreFarmRequest;
+use App\Http\Requests\Api\V1\Farm\UpdateFarmRequest;
 use App\Http\Resources\Api\V1\FarmResource;
 use App\Models\Farm;
 use Illuminate\Http\Request;
+
 
 class FarmController extends Controller
 {
@@ -44,6 +46,27 @@ class FarmController extends Controller
         return (new FarmResource($farm))
             ->response()
             ->setStatusCode(201);
+    }
+
+    /**
+     * 圃場を更新
+     */
+    public function update(UpdateFarmRequest $request, Farm $farm)
+    {
+        $user = $request->attributes->get('auth_user');
+
+        if ($farm->app_user_id !== $user->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $farm->update([
+            'farm_name' => $request->input('farm_name'),
+            'cultivation_method' => $request->input('cultivation_method'),
+            'crop_type' => $request->input('crop_type'),
+            'boundary_polygon' => $request->input('boundary_polygon'),
+        ]);
+        return new FarmResource($farm);
+ 
     }
 }
 

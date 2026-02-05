@@ -10,5 +10,7 @@ Route::middleware(['cognito.jwt'])->group(function () {
     Route::patch('/me', [MeController::class, 'update']);
     Route::post('/farms', [FarmController::class, 'store']);
     Route::get('/farms', [FarmController::class, 'index']);
+    Route::put('/farms/{farm}', [FarmController::class, 'update']);
+    Route::patch('/farms/{farm}', [FarmController::class, 'update']);
 });
 
