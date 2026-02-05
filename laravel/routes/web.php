@@ -29,6 +29,7 @@ Route::middleware(['auth'])->group(function () {
 	Route::get('/uploads', [App\Http\Controllers\UploadManagementController::class, 'index'])->name('upload-management.index');
 	Route::get('/uploads/create', [App\Http\Controllers\UploadManagementController::class, 'create'])->name('upload-management.create');
 	Route::post('/uploads', [App\Http\Controllers\UploadManagementController::class, 'store'])->name('upload-management.store');
+	Route::get('/uploads/{id}/download', [App\Http\Controllers\UploadManagementController::class, 'download'])->name('upload-management.download');
     // 推定結果閲覧
     Route::get('/estimation-results', [\App\Http\Controllers\EstimationResultsController::class, 'index'])->name('estimation-results.index');
     Route::get('/estimation-results/farms/{farm}', [\App\Http\Controllers\EstimationResultsController::class, 'farmDates'])

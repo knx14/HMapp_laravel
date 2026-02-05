@@ -209,7 +209,17 @@ function showUploadDetail(uploadId) {
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">ファイルパス</label>
-                <p class="text-gray-900 break-all">${upload.file_path}</p>
+                <div class="flex items-center gap-2">
+                    <p class="text-gray-900 break-all flex-1">${upload.file_path}</p>
+                    <a href="/uploads/${upload.id}/download" 
+                       class="inline-flex items-center text-blue-600 hover:text-blue-800 transition" 
+                       title="ファイルをダウンロード"
+                       onclick="event.stopPropagation();">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                    </a>
+                </div>
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">分析日付</label>
