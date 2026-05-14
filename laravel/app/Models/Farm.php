@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Farm extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'app_user_id',
         'farm_name',
@@ -34,5 +37,14 @@ class Farm extends Model
     public function uploads(): HasMany
     {
         return $this->hasMany(Upload::class);
+    }
+
+    /**
+     * 農場の作業記録とのリレーション
+     */
+    public function workLogs(): HasMany
+    {
+        return $this->hasMany(WorkLog::class)
+            ->orderBy('work_date', 'desc');
     }
 }
