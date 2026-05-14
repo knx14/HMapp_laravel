@@ -33,7 +33,9 @@ test('map-diff returns 404 previous_not_found when no previous date exists', fun
         'status' => Upload::STATUS_COMPLETED,
     ]);
 
-    app()->instance(JwtVerifier::class, new class {
+    app()->instance(JwtVerifier::class, new class extends JwtVerifier {
+        public function __construct() {}
+
         public function verifyToken(string $jwt): array
         {
             return [
@@ -45,7 +47,7 @@ test('map-diff returns 404 previous_not_found when no previous date exists', fun
         }
     });
 
-    app()->instance(CognitoUserResolver::class, new class($appUser) {
+    app()->instance(CognitoUserResolver::class, new class($appUser) extends CognitoUserResolver {
         public function __construct(private AppUser $user) {}
 
         public function resolve(string $sub, ?string $email = null, ?string $name = null): AppUser
