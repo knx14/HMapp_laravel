@@ -6,12 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\AppUser;
 use App\Models\Farm;
 use App\Models\Upload;
+use App\Services\Results\FarmTimelineService;
 use App\Services\Results\ResultsAggregationService;
+use App\Services\Results\ResultsTimeseriesService;
 use Illuminate\Http\Request;
 
 class ResultsApiController extends Controller
 {
-    public function __construct(private ResultsAggregationService $results) {}
+    public function __construct(
+        private ResultsAggregationService $results,
+        private ResultsTimeseriesService $timeseries,
+        private FarmTimelineService $timeline,
+    ) {}
 
     /**
      * GET /api/results/latest
@@ -231,6 +237,34 @@ class ResultsApiController extends Controller
             'previous_measurement_date' => $previousDateStr,
             'points' => $outPoints,
         ]);
+    }
+
+    /**
+     * GET /api/farms/{farm_id}/results/timeseries?parameter=CEC|CaO|K2O|MgO
+     */
+    public function farmResultTimeseries(Request $request, int $farmId)
+    {
+        $farm = $this->authorizeFarm($request, $farmId);
+        $parameter = (string) $request->query('parameter', 'CEC');
+        $allowed = $this->timeseries->allowedParameters();
+
+        if (!in_array($parameter, $allowed, true)) {
+            return response()->json([
+                'message' => 'parameter must be one of: ' . implode(', ', $allowed),
+            ], 422);
+        }
+
+        return response()->json($this->timeseries->get((int) $farm->id, $parameter));
+    }
+
+    /**
+     * GET /api/farms/{farm_id}/timeline
+     */
+    public function farmTimeline(Request $request, int $farmId)
+    {
+        $farm = $this->authorizeFarm($request, $farmId);
+
+        return response()->json($this->timeline->get((int) $farm->id));
     }
 
     private function authUser(Request $request): AppUser

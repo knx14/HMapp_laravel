@@ -33,6 +33,8 @@ Route::middleware(['cognito.jwt'])->group(function () {
     Route::get('/farms/{farmId}/results/dates', [ResultsApiController::class, 'farmResultDates']);
     Route::get('/farms/{farmId}/results/map', [ResultsApiController::class, 'farmResultMap']);
     Route::get('/farms/{farmId}/results/map-diff', [ResultsApiController::class, 'farmResultMapDiff']);
+    Route::get('/farms/{farmId}/results/timeseries', [ResultsApiController::class, 'farmResultTimeseries']);
+    Route::get('/farms/{farmId}/timeline', [ResultsApiController::class, 'farmTimeline']);
 });
 
 // 分析サマリー一覧API
