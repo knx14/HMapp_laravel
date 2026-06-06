@@ -7,7 +7,9 @@ use App\Http\Requests\Api\V1\Farm\StoreFarmRequest;
 use App\Http\Requests\Api\V1\Farm\UpdateFarmRequest;
 use App\Http\Resources\Api\V1\FarmResource;
 use App\Models\Farm;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 
 class FarmController extends Controller
@@ -67,6 +69,28 @@ class FarmController extends Controller
         ]);
         return new FarmResource($farm);
  
+    }
+
+    /**
+     * 関連データのない圃場のみ削除
+     */
+    public function destroy(Request $request, Farm $farm): JsonResponse
+    {
+        $user = $request->attributes->get('auth_user');
+
+        if ($farm->app_user_id !== $user->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        if ($farm->uploads()->exists() || (Schema::hasTable('work_logs') && $farm->workLogs()->exists())) {
+            return response()->json([
+                'message' => 'この圃場には測定データまたは作業記録が存在するため削除できません。',
+            ], 422);
+        }
+
+        $farm->delete();
+
+        return response()->json(['message' => 'deleted']);
     }
 }
 
