@@ -13,6 +13,7 @@ Route::middleware(['cognito.jwt'])->group(function () {
     Route::get('/farms', [FarmController::class, 'index']);
     Route::put('/farms/{farm}', [FarmController::class, 'update']);
     Route::patch('/farms/{farm}', [FarmController::class, 'update']);
+    Route::delete('/farms/{farm}', [FarmController::class, 'destroy']);
     Route::get('/farms/{farm}/work-logs', [WorkLogController::class, 'index']);
     Route::post('/farms/{farm}/work-logs', [WorkLogController::class, 'store']);
     Route::patch('/work-logs/{workLog}', [WorkLogController::class, 'update']);
