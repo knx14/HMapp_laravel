@@ -113,6 +113,7 @@ class ResultsAggregationService
      *   point_id:int,
      *   lat: float|null,
      *   lng: float|null,
+     *   created_at: string|null,
      *   values: array<int, array{parameter:string, value: float|null, unit: string|null}>
      * }>
      */
@@ -125,7 +126,7 @@ class ResultsAggregationService
 
         $analysisPoints = AnalysisResult::query()
             ->whereIn('upload_id', $uploadIds)
-            ->get(['id', 'latitude', 'longitude']);
+            ->get(['id', 'latitude', 'longitude', 'created_at']);
 
         if ($analysisPoints->isEmpty()) {
             return [];
@@ -146,6 +147,7 @@ class ResultsAggregationService
                 'point_id' => (int) $p->id,
                 'lat' => is_null($p->latitude) ? null : (float) $p->latitude,
                 'lng' => is_null($p->longitude) ? null : (float) $p->longitude,
+                'created_at' => $p->created_at?->toIso8601String(),
                 'values' => $valuesForPoint->map(function ($rv) {
                     return [
                         'parameter' => (string) $rv->parameter_name,
