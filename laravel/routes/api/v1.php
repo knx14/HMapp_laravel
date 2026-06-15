@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\FarmController;
 use App\Http\Controllers\Api\V1\WorkLogController;
+use App\Http\Controllers\Api\AnalysisResultController;
 
 Route::middleware(['cognito.jwt'])->group(function () {
     Route::get('/me', [MeController::class, 'show']);
@@ -18,5 +19,7 @@ Route::middleware(['cognito.jwt'])->group(function () {
     Route::post('/farms/{farm}/work-logs', [WorkLogController::class, 'store']);
     Route::patch('/work-logs/{workLog}', [WorkLogController::class, 'update']);
     Route::delete('/work-logs/{workLog}', [WorkLogController::class, 'destroy']);
+    Route::patch('/results/{analysisResult}/location', [AnalysisResultController::class, 'updateLocation']);
+    Route::delete('/results/{analysisResult}', [AnalysisResultController::class, 'destroy']);
 });
 
