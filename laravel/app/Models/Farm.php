@@ -47,4 +47,12 @@ class Farm extends Model
         return $this->hasMany(WorkLog::class)
             ->orderBy('work_date', 'desc');
     }
+
+    /**
+     * boundary_polygon の有無で仮登録かどうかを判定する。
+     */
+    public function isProvisional(): bool
+    {
+        return empty($this->boundary_polygon);
+    }
 }

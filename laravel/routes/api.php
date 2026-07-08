@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FarmController;
 use App\Http\Controllers\FarmManagementController;
 use App\Http\Controllers\Api\ResultsApiController;
+use App\Http\Controllers\Api\ManualResultController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,6 +36,7 @@ Route::middleware(['cognito.jwt'])->group(function () {
     Route::get('/farms/{farmId}/results/map-diff', [ResultsApiController::class, 'farmResultMapDiff']);
     Route::get('/farms/{farmId}/results/timeseries', [ResultsApiController::class, 'farmResultTimeseries']);
     Route::get('/farms/{farmId}/timeline', [ResultsApiController::class, 'farmTimeline']);
+    Route::post('/manual-results', [ManualResultController::class, 'store']);
 });
 
 // 分析サマリー一覧API

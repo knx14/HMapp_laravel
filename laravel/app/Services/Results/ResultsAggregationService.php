@@ -244,5 +244,43 @@ class ResultsAggregationService
 
         return $r * $c;
     }
+
+    /**
+     * 圃場平均（日付別平均の単純平均）を算出する。
+     */
+    public function computeFarmAverage(int $farmId, string $parameterName = 'CEC'): ?float
+    {
+        $dates = Upload::query()
+            ->where('farm_id', $farmId)
+            ->where('status', Upload::STATUS_COMPLETED)
+            ->whereNotNull('measurement_date')
+            ->selectRaw('measurement_date as date')
+            ->distinct()
+            ->orderBy('date')
+            ->pluck('date');
+
+        $dailyAverages = [];
+        foreach ($dates as $date) {
+            $dateStr = $this->toDateString($date);
+            $avg = ResultValue::query()
+                ->where('parameter_name', $parameterName)
+                ->whereHas('analysisResult.upload', function ($q) use ($farmId, $dateStr) {
+                    $q->where('farm_id', $farmId)
+                        ->where('status', Upload::STATUS_COMPLETED)
+                        ->whereDate('measurement_date', $dateStr);
+                })
+                ->avg('parameter_value');
+
+            if ($avg !== null) {
+                $dailyAverages[] = round((float) $avg, 2);
+            }
+        }
+
+        if ($dailyAverages === []) {
+            return null;
+        }
+
+        return round(array_sum($dailyAverages) / count($dailyAverages), 2);
+    }
 }
 

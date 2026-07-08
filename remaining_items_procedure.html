@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>HenryMonitor 未修整項目 実装手順書</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8f7f1;--paper:#fff;--ink:#1a2318;--ink2:#3d4f3a;--ink3:#6b7e68;
+  --line:#dbd6c4;--lines:#eae6d6;
+  --leaf:#2e5c39;--leafl:#4a8459;--leafp:#e2ede4;
+  --soil:#7a4525;--soilp:#f2e8e0;
+  --amber:#b85c00;--amberp:#fef0d8;
+  --red:#b02020;--redp:#fce4e4;
+  --blue:#1a4f7a;--bluep:#ddeaf5;
+  --teal:#1a6a6a;--tealp:#d8efef;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans JP',sans-serif;line-height:1.75;font-size:15.5px}
+h1,h2,h3{font-family:'Noto Serif JP',serif;color:var(--ink);margin:0 0 .5em}
+code,pre,.mono{font-family:'JetBrains Mono',monospace}
+a{color:var(--leaf)}
+.layout{display:flex;max-width:1320px;margin:0 auto}
+nav.side{width:260px;flex:none;position:sticky;top:0;height:100vh;overflow-y:auto;padding:28px 18px;border-right:1px solid var(--line);background:var(--paper)}
+nav.side ul{list-style:none;padding:0;margin:0}
+nav.side li{margin:2px 0}
+nav.side a{display:block;padding:6px 10px;border-radius:6px;color:var(--ink2);text-decoration:none;font-size:13.5px}
+nav.side a.sec{font-weight:700;color:var(--ink)}
+nav.side a.sub{padding-left:20px;font-size:12.5px;color:var(--ink3)}
+nav.side a:hover{background:var(--leafp)}
+nav.side hr{border:none;border-top:1px solid var(--lines);margin:10px 0}
+main.main{flex:1;min-width:0;padding:40px 56px 100px}
+.cover{padding:32px 0 28px;border-bottom:3px solid var(--ink)}
+.badge{display:inline-block;background:var(--amberp);color:var(--amber);border:1px solid var(--amber);border-radius:20px;padding:3px 14px;font-size:12.5px;font-weight:700;margin-bottom:14px}
+.cover h1{font-size:30px}
+.cover .desc{color:var(--ink2);max-width:760px}
+.cmeta{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.cmeta dl{margin:0;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 14px;min-width:170px}
+.cmeta dt{font-size:11px;color:var(--ink3);margin:0}
+.cmeta dd{margin:2px 0 0;font-weight:700;font-size:13.5px}
+section{padding:38px 0;border-bottom:1px solid var(--lines)}
+section h2{font-size:22px;display:flex;align-items:center;gap:10px}
+.tag{font-size:11px;font-weight:700;padding:2px 10px;border-radius:14px}
+.tag.laravel{background:var(--bluep);color:var(--blue)}
+.tag.flutter{background:var(--tealp);color:var(--teal)}
+.tag.db{background:var(--soilp);color:var(--soil)}
+.tag.new{background:var(--redp);color:var(--red)}
+h3.step{font-size:16px;margin-top:28px;background:var(--leafp);color:var(--leaf);padding:6px 12px;border-radius:6px;display:inline-block}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.8px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--paper);font-weight:700}
+tr:nth-child(even) td{background:#fbfaf5}
+pre{background:#1e261c;color:#eae6d6;padding:14px 16px;border-radius:8px;overflow-x:auto;font-size:12.8px;line-height:1.6}
+code.inline{background:var(--lines);padding:1px 6px;border-radius:4px;font-size:.92em}
+.note{background:var(--amberp);border-left:4px solid var(--amber);padding:10px 16px;border-radius:0 6px 6px 0;margin:14px 0;font-size:13.8px}
+.note.blue{background:var(--bluep);border-left-color:var(--blue)}
+.note.red{background:var(--redp);border-left-color:var(--red)}
+.check{list-style:none;padding:0;margin:10px 0}
+.check li{padding:5px 0 5px 28px;position:relative;font-size:13.8px}
+.check li::before{content:"☐";position:absolute;left:0;color:var(--ink3)}
+.file{font-size:12.5px;color:var(--ink3)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="side">
+  <ul>
+    <li><a class="sec" href="#prereq">0. 前提確認</a></li>
+    <hr>
+    <li><a class="sec" href="#A">A. ホーム画面フォント拡大</a></li>
+    <hr>
+    <li><a class="sec" href="#B">B. 圃場の仮登録機能</a></li>
+    <li><a class="sub" href="#B1">B-1 DB調査・nullable化</a></li>
+    <li><a class="sub" href="#B2">B-2 Laravel API 修正</a></li>
+    <li><a class="sub" href="#B3">B-3 Flutter 仮登録フォーム</a></li>
+    <li><a class="sub" href="#B4">B-4 測定時エリア判定スキップ</a></li>
+    <hr>
+    <li><a class="sec" href="#C">C. 時系列・タイムライン改修</a></li>
+    <li><a class="sub" href="#C1">C-1 期間フィルタ変更</a></li>
+    <li><a class="sub" href="#C2">C-2 圃場平均ロジック変更</a></li>
+    <li><a class="sub" href="#C3">C-3 過去実績の手動入力</a></li>
+    <hr>
+    <li><a class="sec" href="#check">動作確認チェックリスト</a></li>
+    <li><a class="sec" href="#deploy">commit → PR → CI/CD</a></li>
+    <li><a class="sec" href="#dod">✓ 完了条件</a></li>
+  </ul>
+</nav>
+
+<main class="main">
+
+<div class="cover">
+  <span class="badge">FB対応・残タスク</span>
+  <h1>未修整項目 実装手順書</h1>
+  <p class="desc">
+    前回のFB対応（F1〜F11／B1／B2）のうち、まだ未着手の3項目について実装手順をまとめる。
+    A（フォント拡大）は軽微なFlutter変更、B（仮登録圃場）はDBスキーマ調査を伴うLaravel＋Flutter変更、
+    C（時系列・タイムライン改修）はLaravel API拡張とFlutter描画ロジックの両方に及ぶ最も規模の大きい変更となる。
+  </p>
+  <div class="cmeta">
+    <dl><dt>対象範囲</dt><dd>Laravel + Flutter + DB</dd></dl>
+    <dl><dt>DB変更</dt><dd>farms 3カラムのnullable化のみ（新規カラム追加なし）</dd></dl>
+    <dl><dt>新規API</dt><dd>過去実績手動登録エンドポイント</dd></dl>
+    <dl><dt>ブランチ</dt><dd><code class="inline">feature/pending-items-2</code></dd></dl>
+    <dl><dt>analyze baseline</dt><dd>117件以下を維持</dd></dl>
+  </div>
+</div>
+
+<!-- ============ 0. 前提確認 ============ -->
+<section id="prereq">
+<h2>0. 前提確認</h2>
+<ul class="check">
+  <li>これまでのFB対応（F1〜F11 / B1 / B2）がmainにマージ済みであることを確認</li>
+  <li><code class="inline">git checkout main && git pull</code> → <code class="inline">git checkout -b feature/pending-items-2</code></li>
+  <li><code class="inline">flutter analyze</code> を実行し、baseline が117件（info）のままであることを確認</li>
+  <li>RDSへEC2経由でSSH接続できることを確認（<span class="file">hm-admin-app-db2.cpwk42kw0c6c.ap-northeast-1.rds.amazonaws.com</span>）</li>
+  <li>Laravel側のマイグレーション実行環境（EC2上の <code class="inline">php artisan migrate</code>）が利用可能なことを確認</li>
+</ul>
+<div class="note blue">
+  本手順書は3つの独立したタスク（A・B・C）で構成される。順序に依存関係はないが、
+  B → C の順で進めると「圃場に境界情報がない場合の集計・表示」という共通の考慮点を連続して扱えるため推奨。
+</div>
+</section>
+
+<!-- ============ A. ホーム画面フォント拡大 ============ -->
+<section id="A">
+<h2>A. ホーム画面のフォントサイズ拡大 <span class="tag flutter">Flutter</span></h2>
+
+<h3 class="step">Step A-1：対象箇所の洗い出し</h3>
+<p><code class="inline">HomeScreen</code>（結果閲覧タブ）内のテキストウィジェットを棚卸しし、フォントサイズをハードコードしている箇所と <code class="inline">Theme.of(context).textTheme</code> を参照している箇所を分類する。</p>
+<pre>grep -rn "fontSize" lib/features/results/presentation/ | grep -i home
+grep -rn "TextStyle(" lib/features/results/presentation/</pre>
+
+<h3 class="step">Step A-2：拡大方針の決定</h3>
+<table>
+<tr><th>要素</th><th>現状（目安）</th><th>変更後（目安）</th></tr>
+<tr><td>圃場名・見出し</td><td>16px</td><td>18〜19px</td></tr>
+<tr><td>最新結果カードの数値（CEC等）</td><td>20px</td><td>24px</td></tr>
+<tr><td>ラベル・補助テキスト（ばらつき小 等）</td><td>12px</td><td>13〜14px</td></tr>
+<tr><td>日付</td><td>12px</td><td>13px</td></tr>
+</table>
+<div class="note">
+  農家ユーザーは高齢者比率が高いことが想定されるため、圃場管理画面や測定画面など他タブへの
+  影響は今回のスコープ外とし、まずはホーム（結果閲覧）タブに限定して実施する。
+</div>
+
+<h3 class="step">Step A-3：実装</h3>
+<ul class="check">
+  <li>個別 <code class="inline">TextStyle(fontSize: ...)</code> のハードコードを避け、可能な範囲で共通の <code class="inline">AppTextStyles</code>（既存があれば流用、なければ <span class="file">lib/core/theme/</span> 配下に定義）に集約</li>
+  <li>MediaQueryの<code class="inline">textScaleFactor</code>（OS設定の文字拡大）を無効化していないか確認し、無効化している場合は解除を検討</li>
+  <li>カード内のレイアウトがフォント拡大により崩れないか（横並びChipの折り返し等）を確認</li>
+</ul>
+
+<h3 class="step">Step A-4：実機確認</h3>
+<ul class="check">
+  <li>実機でホーム画面の見た目を確認（カード・最新結果・圃場ごとの結果一覧）</li>
+  <li>文字が大きくなったことで1画面に収まる情報量が減っても、スクロールで問題なく閲覧できることを確認</li>
+  <li><code class="inline">flutter analyze</code> でbaseline増加がないことを確認</li>
+</ul>
+</section>
+
+<!-- ============ B. 圃場の仮登録機能 ============ -->
+<section id="B">
+<h2>B. 圃場の仮登録機能 <span class="tag laravel">Laravel</span> <span class="tag flutter">Flutter</span> <span class="tag db">DB</span></h2>
+<p>
+  現状の圃場登録は「基本情報（圃場名・栽培方式・作物種別）→ 境界設定（GPS区画）」の2ステップが必須。
+  仮登録機能では、<b>圃場名のみ</b>で登録を完了できるようにし、栽培方式・作物種別・境界情報は未入力のまま
+  測定を開始できるようにする。境界情報がない圃場では、測定時のエリア内外判定（<code class="inline">maps_toolkit</code>）を
+  スキップする。
+</p>
+
+<h3 class="step" id="B1">Step B-1：DBスキーマ調査（nullable化）</h3>
+<p>まずRDS上の <code class="inline">farms</code> テーブルの現行スキーマを確認し、NOT NULL制約の有無を特定する。</p>
+<pre># EC2にSSH → mysqlクライアントで接続
+mysql -h hm-admin-app-db2.cpwk42kw0c6c.ap-northeast-1.rds.amazonaws.com -u &lt;user&gt; -p
+
+USE henry_monitor;
+DESCRIBE farms;
+SHOW CREATE TABLE farms;</pre>
+<div class="note">
+  想定される調査結果：<code class="inline">cultivation_method</code>、<code class="inline">crop_type</code>、
+  <code class="inline">boundary_polygon</code> がいずれも <code class="inline">NOT NULL</code> になっている可能性が高い。
+  実際の制約状況は上記コマンドの出力で必ず確認し、想定と異なる場合は以降の手順を実際のスキーマに合わせて調整する。
+</div>
+
+<h3 class="step">Step B-2：マイグレーション作成（nullable化のみ）</h3>
+<p>
+  仮登録かどうかを管理する専用カラムは追加しない。<code class="inline">boundary_polygon</code> は
+  「仮登録中はnull・本登録が完了すると必ず値が入る」という一意な状態遷移をたどるため、
+  <code class="inline">boundary_polygon IS NULL</code> であること自体を仮登録判定の唯一の情報源とする。
+  カラムと実データの整合性を別途保証する必要がなくなり、更新漏れによる不整合のリスクも生まれない。
+  必要な変更は既存3カラムのnullable化のみで、スキーマへの追加は一切行わない。
+</p>
+<pre>php artisan make:migration alter_farms_allow_provisional_registration --table=farms</pre>
+<pre>// database/migrations/xxxx_xx_xx_alter_farms_allow_provisional_registration.php
+public function up(): void
+{
+    Schema::table('farms', function (Blueprint $table) {
+        $table-&gt;string('cultivation_method')-&gt;nullable()-&gt;change();
+        $table-&gt;string('crop_type')-&gt;nullable()-&gt;change();
+        $table-&gt;json('boundary_polygon')-&gt;nullable()-&gt;change();
+    });
+}
+
+public function down(): void
+{
+    Schema::table('farms', function (Blueprint $table) {
+        // cultivation_method / crop_type / boundary_polygon のNOT NULL復元はdown側では省略
+        // （既存データにNULLが入っている状態でNOT NULLへ戻すと失敗するため）
+    });
+}</pre>
+<div class="note red">
+  <code class="inline">doctrine/dbal</code> が未導入の場合、<code class="inline">-&gt;change()</code> はエラーになる。
+  未導入なら <code class="inline">composer require doctrine/dbal</code> を先に実行すること（Laravel 12は非推奨警告が出る場合があるため、
+  生SQLでの <code class="inline">ALTER TABLE ... MODIFY COLUMN ...</code> に切り替えても良い）。
+</div>
+<pre># マイグレーション実行はEC2上で
+php artisan migrate --force</pre>
+
+<h3 class="step">Step B-3：Farmモデル・バリデーションの修正</h3>
+<pre>// app/Models/Farm.php
+protected $fillable = [
+    'app_user_id', 'farm_name', 'cultivation_method',
+    'crop_type', 'boundary_polygon',
+];
+
+// カラムは追加せず、boundary_polygonの有無から都度判定する（唯一の情報源）
+public function isProvisional(): bool
+{
+    return is_null($this-&gt;boundary_polygon) || empty($this-&gt;boundary_polygon);
+}</pre>
+<pre>// app/Http/Requests/StoreFarmRequest.php（新規 or 既存修正）
+public function rules(): array
+{
+    return [
+        'farm_name'          =&gt; ['required', 'string', 'max:255'],
+        'cultivation_method' =&gt; ['nullable', 'string', 'max:255'],
+        'crop_type'          =&gt; ['nullable', 'string', 'max:255'],
+        'boundary_polygon'   =&gt; ['nullable', 'array'],
+    ];
+}</pre>
+<ul class="check">
+  <li><code class="inline">POST /api/v1/farms</code>：<code class="inline">farm_name</code> のみで登録できることを確認（他は任意、<code class="inline">boundary_polygon</code>はnullのままINSERT可能）</li>
+  <li>本登録（境界確定）時に呼ばれる <code class="inline">PUT/PATCH /api/v1/farms/{farm}</code> で <code class="inline">boundary_polygon</code> を更新するだけでよい。専用フラグの更新処理は不要（<code class="inline">isProvisional()</code>が自動的にfalseを返すようになる）</li>
+</ul>
+
+<h3 class="step" id="B2">Step B-4：ポリゴン正規化・地図APIの防御的対応</h3>
+<p>
+  <code class="inline">boundary_polygon</code> がnullの圃場が既存の地図関連API（<span class="file">/api/farms/{farmId}/results/map</span> 等）に渡った際に
+  例外にならないよう防御コードを追加する。
+</p>
+<pre>// PolygonNormalizer（既存の正規化処理箇所）
+public static function normalize(?array $polygon): array
+{
+    if (empty($polygon)) {
+        return []; // 仮登録圃場は空配列を返す
+    }
+    // 既存の3形式判定ロジックはそのまま
+    ...
+}</pre>
+<ul class="check">
+  <li>圃場一覧API（<span class="file">/api/farms/with-latest-result</span>）が仮登録圃場も問題なく返すことを確認</li>
+  <li>地図表示系APIで <code class="inline">boundary_polygon</code> が空の場合、フロント側は「区画未設定」の状態として扱う（後述B-5）</li>
+</ul>
+
+<h3 class="step" id="B3">Step B-5：Flutter 圃場登録フローの分岐UI</h3>
+<p>
+  <span class="file">lib/features/farms/</span> 配下の圃場登録画面に「仮登録で進める」の導線を追加する。
+  既存の「基本情報 → 境界設定」の2ステップ遷移はそのまま維持し、基本情報画面に仮登録用のショートカットを設ける。
+</p>
+<table>
+<tr><th>画面</th><th>現状</th><th>変更内容</th></tr>
+<tr><td>基本情報画面</td><td>圃場名・栽培方式・作物種別すべて必須バリデーション</td><td>圃場名のみ必須。栽培方式・作物種別は任意（バリデーション削除）</td></tr>
+<tr><td>ボタン</td><td>「境界設定へ」1つのみ</td><td>「境界設定へ」（本登録）＋「仮登録として保存」（境界設定スキップ）の2ボタン</td></tr>
+<tr><td>境界設定画面</td><td>必須遷移</td><td>「仮登録として保存」経由の場合はスキップし、直接APIへPOST（<code class="inline">boundary_polygon: null</code>）</td></tr>
+<tr><td>圃場一覧カード</td><td>通常表示</td><td>仮登録圃場は「仮登録中」バッジを表示し、タップで基本情報画面に戻り本登録を完了できる導線を用意</td></tr>
+</table>
+<pre>// 基本情報画面（例：FarmBasicInfoScreen）
+ElevatedButton(
+  onPressed: _canProceedToBoundary ? _goToBoundarySetting : null,
+  child: const Text('境界設定へ'),
+),
+const SizedBox(height: 8),
+OutlinedButton(
+  onPressed: _farmNameController.text.trim().isNotEmpty
+      ? _saveAsProvisional
+      : null,
+  child: const Text('仮登録として保存（あとで境界設定）'),
+),</pre>
+<pre>Future&lt;void&gt; _saveAsProvisional() async {
+  await context.read&lt;FarmRepository&gt;().createFarm(
+    farmName: _farmNameController.text.trim(),
+    cultivationMethod: null,
+    cropType: null,
+    boundaryPolygon: null,
+  );
+  if (mounted) Navigator.of(context).pop();
+}</pre>
+
+<h3 class="step" id="B4">Step B-6：測定画面 — エリア判定ロジックのスキップ</h3>
+<p>
+  <code class="inline">MeasurementSessionScreen</code> のStep3（本測定）における「圃場内外判定（<code class="inline">maps_toolkit</code>）→ 圃場外なら測定開始禁止」
+  のロジックを、選択中の圃場が仮登録圃場（<code class="inline">boundary_polygon == null</code>、すなわちAPIレスポンスで境界情報が空）の場合はスキップする。
+</p>
+<pre>// MeasurementSessionScreen 内、圃場内外判定箇所
+bool _isInsideOrEdge(LatLng point) {
+  final farm = _selectedFarm;
+  if (farm == null) return false;
+
+  // 仮登録圃場（境界情報なし）はエリア判定自体を行わない
+  // 判定はboundaryPolygonの有無のみで行う（専用フラグは持たない）
+  if (farm.boundaryPolygon == null || farm.boundaryPolygon!.isEmpty) {
+    return true; // 常に測定可能とみなす
+  }
+
+  final containment = PolygonUtil.containsLocation(point, farm.boundaryPolygon!, false);
+  final onEdge = PolygonUtil.isLocationOnEdge(point, farm.boundaryPolygon!, 1e-6);
+  return containment || onEdge;
+}</pre>
+<ul class="check">
+  <li>本測定画面で、赤い圃場境界線が「仮登録圃場では表示されない」ことをUI上でも明示（境界未設定のバナー等）</li>
+  <li>仮登録圃場選択時は「測定開始」ボタンが常に有効であることを確認</li>
+  <li>境界情報がある通常の圃場では、従来通り圃場外判定が機能することを回帰確認</li>
+</ul>
+<div class="note red">
+  仮登録圃場はGPS判定を行わないため、誤って別の畑で測定してしまうリスクがある。
+  測定開始前の確認ダイアログに「この圃場は仮登録のため、位置情報による誤測定防止が働きません」の注意文言を追加することを推奨する（必須ではないが強く推奨）。
+</div>
+</section>
+
+<!-- ============ C. 時系列・タイムライン改修 ============ -->
+<section id="C">
+<h2>C. 時系列・タイムライン画面の改修 <span class="tag laravel">Laravel</span> <span class="tag flutter">Flutter</span> <span class="tag new">新規API</span></h2>
+
+<h3 class="step" id="C1">C-1. 時系列グラフの期間フィルタ変更</h3>
+<p>
+  既存の期間フィルタ（すべて／1年間／1ヶ月）を <b>すべて／3年間／1年間</b> に変更する。
+  データ取得自体はサーバー側で絞り込まず、既存通りクライアント側フィルタ（<code class="inline">graphic</code>ライブラリ描画前のリスト絞り込み）で対応する。
+</p>
+<pre>// lib/features/results/presentation/tabs/timeseries_tab.dart（既存のSegmentedButton相当箇所）
+enum TimeseriesRange { all, threeYears, oneYear }
+
+extension on TimeseriesRange {
+  String get label =&gt; switch (this) {
+    TimeseriesRange.all =&gt; 'すべて',
+    TimeseriesRange.threeYears =&gt; '3年間',
+    TimeseriesRange.oneYear =&gt; '1年間',
+  };
+  Duration? get duration =&gt; switch (this) {
+    TimeseriesRange.all =&gt; null,
+    TimeseriesRange.threeYears =&gt; const Duration(days: 365 * 3),
+    TimeseriesRange.oneYear =&gt; const Duration(days: 365),
+  };
+}</pre>
+<ul class="check">
+  <li>既存の「1ヶ月」選択肢を削除し「3年間」に置き換え</li>
+  <li>フィルタ切り替え時にグラフが再描画され、選択範囲外のプロットが除外されることを確認</li>
+  <li>デフォルト選択は現状維持（要確認：既存実装のデフォルトを踏襲）</li>
+</ul>
+
+<h3 class="step" id="C2">C-2. 圃場平均ロジックの変更（最新日平均 → 全日付平均の平均）</h3>
+<p><b>現状の挙動：</b> 圃場平均として「最新の測定日における全測定点の平均値」を表示している。</p>
+<p><b>変更後の挙動：</b> 各測定日ごとの平均値を算出し、それら日付別平均の単純平均を「その圃場の平均値」として算出。グラフ上には、この1つの値を<b>水平な1本の点線</b>として表示する（日付ごとに値が変化する折れ線ではない）。</p>
+<div class="note">
+  例：日付1（7点測定）→ 日平均A、日付2（5点測定）→ 日平均B、日付3（7点測定）→ 日平均C　のとき、
+  圃場平均 = (A + B + C) / 3。点数の重み付けは行わず、日付単位の平均をさらに平均する。
+</div>
+
+<h4>Laravel側：ResultsAggregationService の修正</h4>
+<pre>// app/Services/ResultsAggregationService.php
+
+/**
+ * 圃場平均（日付別平均の平均）を算出する。
+ * 日付別平均はあくまで内部の計算過程であり、APIとしては最終的な
+ * farm_average（1つのfloat値）のみを返す。グラフには水平点線として描画する。
+ */
+public function computeFarmAverage(int $farmId, string $parameterName = 'CEC'): ?float
+{
+    $dates = AnalysisResult::query()
+        -&gt;whereHas('upload', fn ($q) =&gt; $q-&gt;where('farm_id', $farmId)-&gt;where('status', 'completed'))
+        -&gt;join('uploads', 'analysis_results.upload_id', '=', 'uploads.id')
+        -&gt;selectRaw('uploads.measurement_date as date')
+        -&gt;distinct()
+        -&gt;orderBy('date')
+        -&gt;pluck('date');
+
+    $dailyAverages = [];
+    foreach ($dates as $date) {
+        $avg = ResultValue::query()
+            -&gt;where('parameter_name', $parameterName)
+            -&gt;whereHas('analysisResult.upload', fn ($q) =&gt; $q-&gt;where('farm_id', $farmId)-&gt;where('measurement_date', $date))
+            -&gt;avg('parameter_value');
+        if ($avg !== null) {
+            $dailyAverages[] = round($avg, 2);
+        }
+    }
+
+    if (empty($dailyAverages)) {
+        return null;
+    }
+
+    return round(array_sum($dailyAverages) / count($dailyAverages), 2);
+}</pre>
+<div class="note">
+  圃場平均は、時系列グラフの横軸全体を通じて<b>水平な1本の点線</b>として表示する（日付ごとの平均点を結ぶ折れ線ではない）。
+  グラフ上の各データ点（固定地点の実線・フリー地点の点）とは独立した、圃場全体の代表値を示す固定値ラインとして扱う。
+</div>
+<pre>// APIエンドポイント追加（既存の時系列APIに統合 or 新規）
+// GET /api/farms/{farmId}/results/timeseries?parameter=CEC
+{
+  "fixed_points": [ ... ],       // 既存：固定地点別の時系列
+  "farm_average": 22.13          // 水平点線として描画する1つの値
+}</pre>
+
+<h4>Flutter側：graphicライブラリでの水平点線描画</h4>
+<pre>// lib/features/results/domain/timeseries_models.dart にfarmAverageを追加
+class TimeseriesResponse {
+  final List&lt;FixedPointSeries&gt; fixedPoints;
+  final double? farmAverage; // 圃場平均（全期間フラットな1本の値）
+  ...
+}</pre>
+<pre>// graphicでの水平点線の描画例：グラフの表示期間の最初と最後の日付に
+// 同じfarmAverage値を持つ2点を用意し、1本の点線として描画する
+final farmAverageSeries = [
+  {'date': visibleDateRange.start, 'value': farmAverage},
+  {'date': visibleDateRange.end,   'value': farmAverage},
+];
+
+LineMark(
+  data: farmAverageSeries,
+  position: Varset('date') * Varset('value'),
+  shape: ShapeEncode(value: BasicLineShape(dash: [4, 2])), // 点線
+  color: ColorEncode(value: Colors.grey),
+),</pre>
+<ul class="check">
+  <li>凡例に「圃場平均（全期間）」の項目を点線サンプルとともに追加</li>
+  <li>期間フィルタ（すべて／3年間／1年間）を切り替えても、圃場平均の点線は水平のまま高さが変わらないことを確認（フィルタは表示範囲のみに影響し、farm_averageの値自体は変えない）</li>
+  <li>固定地点の実線・フリー地点の点群・圃場平均の点線が同一グラフ上で判別可能なことを確認</li>
+  <li>圃場平均の値が仕様通り「日付別平均の単純平均」になっているか、テストデータで検算</li>
+</ul>
+
+<h3 class="step" id="C3">C-3. 過去の分析結果を手動入力できる機能</h3>
+<p>
+  紙やExcelで管理していた過去の測定結果を、圃場につき1日1件（平均値のみ、地点は圃場の中央値）としてシステムに取り込めるようにする。
+  対象テーブルは <code class="inline">uploads</code> / <code class="inline">analysis_results</code> / <code class="inline">result_values</code> の3つで、
+  Lambda推論パイプラインを一切経由せず、Laravel側で直接INSERTする点が通常のフローと異なる。
+</p>
+
+<h4>入力フォーム項目</h4>
+<table>
+<tr><th>項目</th><th>格納先</th><th>備考</th></tr>
+<tr><td>圃場選択</td><td>uploads.farm_id</td><td>本登録済み（boundary_polygon確定済み）の圃場のみ選択可</td></tr>
+<tr><td>測定日</td><td>uploads.measurement_date</td><td>過去日付を許容</td></tr>
+<tr><td>17種の推定値（CEC, Ca, K, Mg, ... 各項目、未入力可）</td><td>result_values（項目ごとに1行）</td><td>入力された項目のみ登録し、空欄はスキップ</td></tr>
+</table>
+
+<h4>Step C-3-1：圃場中央値（重心）算出ロジック</h4>
+<pre>// app/Services/PolygonCentroidService.php（新規）
+class PolygonCentroidService
+{
+    /**
+     * 圃場のboundary_polygon（正規化済み配列）から単純重心を算出する。
+     * 農地は小規模のため、緯度経度の単純算術平均で十分な精度とする。
+     */
+    public function centroidOf(array $normalizedPolygon): array
+    {
+        $count = count($normalizedPolygon);
+        $latSum = array_sum(array_column($normalizedPolygon, 'lat'));
+        $lngSum = array_sum(array_column($normalizedPolygon, 'lng'));
+
+        return [
+            'latitude'  =&gt; round($latSum / $count, 7),
+            'longitude' =&gt; round($lngSum / $count, 7),
+        ];
+    }
+}</pre>
+<div class="note red">
+  仮登録圃場（B項目で追加した <code class="inline">boundary_polygon = null</code> の圃場）は重心を算出できないため、
+  過去実績の手動入力対象からは<b>除外</b>する（フォームの圃場選択肢に出さない、もしくは選択時にエラー表示）。
+</div>
+
+<h4>Step C-3-2：Laravel API新規追加</h4>
+<pre>POST /api/manual-results
+{
+  "farm_id": 12,
+  "measurement_date": "2025-08-10",
+  "values": {
+    "CEC": 21.3,
+    "Ca": 850.2,
+    "K": 120.5,
+    "Mg": 95.0
+    // ... 未入力の項目はキー自体を省略可
+  }
+}</pre>
+<pre>// app/Http/Controllers/ManualResultController.php（新規）
+public function store(StoreManualResultRequest $request, PolygonCentroidService $centroidService)
+{
+    $farm = Farm::findOrFail($request-&gt;farm_id);
+
+    if (empty($farm-&gt;boundary_polygon)) {
+        return response()-&gt;json(['message' =&gt; 'farm_boundary_required'], 422);
+    }
+
+    $centroid = $centroidService-&gt;centroidOf(
+        PolygonNormalizer::normalize($farm-&gt;boundary_polygon)
+    );
+
+    return DB::transaction(function () use ($request, $farm, $centroid) {
+        $upload = Upload::create([
+            'farm_id'                =&gt; $farm-&gt;id,
+            'measurement_date'       =&gt; $request-&gt;measurement_date,
+            'measurement_parameters' =&gt; ['manual_entry' =&gt; true],
+            'file_path'              =&gt; null,
+            'status'                 =&gt; 'completed',
+        ]);
+
+        $analysisResult = AnalysisResult::create([
+            'upload_id'   =&gt; $upload-&gt;id,
+            'sensor_info' =&gt; ['manual_entry' =&gt; true],
+            'latitude'    =&gt; $centroid['latitude'],
+            'longitude'   =&gt; $centroid['longitude'],
+        ]);
+
+        foreach ($request-&gt;values as $paramName =&gt; $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+            ResultValue::updateOrCreate(
+                ['analysis_result_id' =&gt; $analysisResult-&gt;id, 'parameter_name' =&gt; $paramName],
+                ['parameter_value' =&gt; $value, 'unit' =&gt; SoilParameterUnits::unitFor($paramName)]
+            );
+        }
+
+        return response()-&gt;json(['upload_id' =&gt; $upload-&gt;id], 201);
+    });
+}</pre>
+<div class="note blue">
+  <code class="inline">SoilParameterUnits::unitFor($paramName)</code> は17パラメータ名→単位のマッピングを持つ小さなヘルパクラス
+  （新規作成、<span class="file">app/Support/SoilParameterUnits.php</span> 等）として切り出す。
+  推論パイプライン側（<code class="inline">soil_models.json</code>）のラベル定義と齟齬がないよう、既存のCEC2/CEC問題（KEY_NAME_MAP）と同様に
+  キー名の対応関係を必ず確認すること。
+</div>
+<pre>// routes/api.php
+Route::middleware('cognito.jwt')-&gt;post('/manual-results', [ManualResultController::class, 'store']);
+// ※ Web管理画面（Breeze認証）経由での入力を想定する場合は web.php 側 + admin_users権限に変更</pre>
+<ul class="check">
+  <li>入力フォームをモバイルアプリと管理画面（<span class="file">/estimation-results</span>）のどちらに置くか要確認。既存の「推定結果閲覧（結果入力）」画面が管理画面に存在するため、まずはその拡張として実装するのが手戻りが少ない</li>
+  <li>uploadsテーブルの <code class="inline">status</code> は最初から <code class="inline">"completed"</code> とし、<code class="inline">uploaded → processing</code> の遷移は経由しない（Lambda冪等チェックとは無関係な経路のため）</li>
+  <li><code class="inline">result_values</code> のUNIQUE制約（analysis_result_id, parameter_name）はUPSERTで担保</li>
+  <li>登録後、当該圃場の時系列・タイムライン・マップに手動入力データが正しく反映されることを確認</li>
+</ul>
+
+<h4>Step C-3-3：既存「結果入力」画面（/estimation-results）の拡張</h4>
+<p>スキルドキュメント記載の既存機能「推定結果閲覧（<span class="file">/estimation-results</span>）: CECマップ表示・結果入力」を確認し、以下を拡張する。</p>
+<ul class="check">
+  <li>現状CECのみの入力欄になっていないか確認し、17パラメータすべて入力できるフォームに拡張</li>
+  <li>圃場選択時に境界未設定（仮登録）圃場を選択肢から除外 or 選択不可表示</li>
+  <li>登録処理を Step C-3-2 の新API（もしくは既存処理をリファクタリングした同等ロジック）に接続</li>
+  <li>入力後、対象圃場の時系列グラフ・タイムラインに反映されることを画面上で確認</li>
+</ul>
+</section>
+
+<!-- ============ 動作確認チェックリスト ============ -->
+<section id="check">
+<h2>動作確認チェックリスト</h2>
+<h3 class="step">A. ホーム画面フォント</h3>
+<ul class="check">
+  <li>実機でホーム画面の文字が拡大表示されている</li>
+  <li>レイアウト崩れ（はみ出し・折り返し異常）がない</li>
+</ul>
+<h3 class="step">B. 仮登録圃場</h3>
+<ul class="check">
+  <li>圃場名のみで登録が成功する</li>
+  <li>仮登録圃場は圃場一覧に「仮登録中」等の表示で区別される</li>
+  <li>仮登録圃場を選んで測定すると、位置に関係なく測定を開始できる</li>
+  <li>境界情報のある通常圃場では、従来通り圃場外で測定がブロックされる（回帰確認）</li>
+  <li>仮登録圃場に後から境界設定を行うと、<code class="inline">boundary_polygon</code>が確定するだけで自動的に「本登録」扱いになる（専用フラグの更新は不要）</li>
+</ul>
+<h3 class="step">C. 時系列・タイムライン</h3>
+<ul class="check">
+  <li>期間フィルタが「すべて／3年間／1年間」の3択になっている</li>
+  <li>圃場平均が「日付別平均の平均」で計算され、点線で表示される</li>
+  <li>過去実績の手動入力フォームから登録したデータが、マップ・時系列・タイムラインすべてに正しく反映される</li>
+  <li>手動入力データのGPS表示位置が圃場のおおよそ中央になっている</li>
+  <li>境界未設定の圃場が手動入力対象から正しく除外される</li>
+</ul>
+<h3 class="step">共通</h3>
+<ul class="check">
+  <li><code class="inline">flutter analyze</code> がbaseline（117件）を超えていない</li>
+  <li><code class="inline">dart format</code> 実行済み</li>
+  <li>Laravel側 <code class="inline">php artisan migrate</code> がステージング/EC2で正常に完了する</li>
+  <li>既存の測定・アップロード・推論フローに影響が出ていない（回帰確認）</li>
+</ul>
+</section>
+
+<!-- ============ commit → PR → CI/CD ============ -->
+<section id="deploy">
+<h2>commit → PR → CI/CD</h2>
+<pre>git add -A
+git commit -m "feat: home font size, provisional farm registration, timeseries/timeline improvements"
+git push origin feature/pending-items-2</pre>
+<ul class="check">
+  <li>GitHub上でPull Requestを作成し、変更内容（A/B/Cの3項目）をサマリに明記</li>
+  <li>マイグレーションを含むPRであることをレビュワーに明示し、EC2側での<code class="inline">migrate</code>実行タイミングを合意</li>
+  <li>mainマージ後、GitHub ActionsによりECRへpush → EC2側でdocker compose再起動 → <code class="inline">php artisan migrate</code></li>
+</ul>
+</section>
+
+<!-- ============ 完了条件 ============ -->
+<section id="dod">
+<h2>✓ 完了条件（Definition of Done）</h2>
+<div class="grid2">
+<div>
+<h3 class="step">A. フォント拡大</h3>
+<ul class="check">
+  <li>ホーム画面の主要テキストが拡大され、実機で視認性向上が確認できる</li>
+</ul>
+<h3 class="step">B. 仮登録圃場</h3>
+<ul class="check">
+  <li>farmsテーブルの3カラム（cultivation_method / crop_type / boundary_polygon）がnullable化済み（新規カラム追加なし）</li>
+  <li>圃場名のみでの登録がAPI・アプリ双方で成立する</li>
+  <li>仮登録圃場での測定時、エリア判定が正しくスキップされる</li>
+</ul>
+</div>
+<div>
+<h3 class="step">C. 時系列・タイムライン</h3>
+<ul class="check">
+  <li>期間フィルタが3年間／1年間／すべて に変更されている</li>
+  <li>圃場平均ロジックが「日付別平均の平均」に変更され、点線表示されている</li>
+  <li>過去実績を手動登録するAPIとフォームが完成し、3テーブルへ正しく書き込まれる</li>
+</ul>
+</div>
+</div>
+<div class="note">
+  すべての項目について実機・ステージング環境での動作確認が完了し、
+  <code class="inline">flutter analyze</code> のbaselineが増加していないことを確認した時点で完了とする。
+</div>
+</section>
+
+</main>
+</div>
+</body>
+</html>
