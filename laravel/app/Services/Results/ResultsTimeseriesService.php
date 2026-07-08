@@ -9,6 +9,10 @@ class ResultsTimeseriesService
 {
     private const ALLOWED_PARAMETERS = ['CEC', 'CaO', 'K2O', 'MgO'];
 
+    public function __construct(
+        private ResultsAggregationService $aggregation,
+    ) {}
+
     public function allowedParameters(): array
     {
         return self::ALLOWED_PARAMETERS;
@@ -58,6 +62,7 @@ class ResultsTimeseriesService
             'parameter' => $parameter,
             'unit' => $unit,
             'points' => $points,
+            'farm_average' => $this->aggregation->computeFarmAverage($farmId, $parameter),
             'work_logs' => array_map(fn ($row) => [
                 'date' => (string) $row->date,
                 'work_type' => (string) $row->work_type,
