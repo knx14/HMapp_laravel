@@ -89,6 +89,7 @@
                             <tr>
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">ID</th>
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">農場名</th>
+                                <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">状態</th>
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">栽培方法</th>
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">作物種別</th>
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">ユーザーID</th>
@@ -100,6 +101,13 @@
                                 <tr class="hover:bg-gray-50 cursor-pointer farm-row" data-farm-id="{{ $farm->id }}" data-farm-name="{{ $farm->farm_name }}">
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $farm->id }}</td>
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $farm->farm_name }}</td>
+                                    <td class="px-8 py-4 text-sm">
+                                        @if($farm->hidden_at)
+                                            <span class="inline-flex rounded-full bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-700">非表示中</span>
+                                        @else
+                                            <span class="text-gray-500">表示中</span>
+                                        @endif
+                                    </td>
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $farm->cultivation_method }}</td>
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $farm->crop_type }}</td>
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $farm->app_user_id }}</td>

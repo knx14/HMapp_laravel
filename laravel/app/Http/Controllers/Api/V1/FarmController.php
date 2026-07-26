@@ -11,7 +11,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
-
 class FarmController extends Controller
 {
     /**
@@ -21,7 +20,8 @@ class FarmController extends Controller
     {
         $user = $request->attributes->get('auth_user');
 
-        $farms = Farm::where('app_user_id', $user->id)
+        $farms = Farm::visible()
+            ->where('app_user_id', $user->id)
             ->latest()
             ->get();
 
@@ -67,12 +67,13 @@ class FarmController extends Controller
             'crop_type' => $request->input('crop_type'),
             'boundary_polygon' => $request->input('boundary_polygon'),
         ]);
+
         return new FarmResource($farm);
- 
+
     }
 
     /**
-     * 関連データのない圃場のみ削除
+     * 関連データがある圃場は非表示にし、ない圃場は物理削除する。
      */
     public function destroy(Request $request, Farm $farm): JsonResponse
     {
@@ -82,15 +83,17 @@ class FarmController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        if ($farm->uploads()->exists() || (Schema::hasTable('work_logs') && $farm->workLogs()->exists())) {
+        if ($farm->hasMeasurementData() || (Schema::hasTable('work_logs') && $farm->workLogs()->exists())) {
+            $farm->hide();
+
             return response()->json([
-                'message' => 'この圃場には測定データまたは作業記録が存在するため削除できません。',
-            ], 422);
+                'message' => 'farm_hidden',
+                'farm_id' => $farm->id,
+            ]);
         }
 
         $farm->delete();
 
-        return response()->json(['message' => 'deleted']);
+        return response()->json(['message' => 'farm_deleted']);
     }
 }
-
