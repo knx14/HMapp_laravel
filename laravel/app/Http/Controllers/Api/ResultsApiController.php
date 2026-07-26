@@ -27,6 +27,7 @@ class ResultsApiController extends Controller
         $user = $this->authUser($request);
 
         $farms = Farm::query()
+            ->visible()
             ->where('app_user_id', $user->id)
             ->get(['id', 'farm_name']);
 
@@ -48,7 +49,7 @@ class ResultsApiController extends Controller
         $out = [];
         foreach ($farms as $farm) {
             $row = $latestByFarm->get($farm->id);
-            if (!$row) {
+            if (! $row) {
                 continue; // latestがないfarmは /results/latest では返さない（仕様上 latest_measurement_date が必須）
             }
 
@@ -81,6 +82,7 @@ class ResultsApiController extends Controller
         $user = $this->authUser($request);
 
         $farms = Farm::query()
+            ->visible()
             ->where('app_user_id', $user->id)
             ->orderBy('id')
             ->get(['id', 'farm_name', 'boundary_polygon']);
@@ -171,7 +173,7 @@ class ResultsApiController extends Controller
             ->whereDate('measurement_date', '<', $date)
             ->max('measurement_date');
 
-        if (!$previousDate) {
+        if (! $previousDate) {
             return response()->json(['message' => 'previous_not_found'], 404);
         }
 
@@ -248,9 +250,9 @@ class ResultsApiController extends Controller
         $parameter = (string) $request->query('parameter', 'CEC');
         $allowed = $this->timeseries->allowedParameters();
 
-        if (!in_array($parameter, $allowed, true)) {
+        if (! in_array($parameter, $allowed, true)) {
             return response()->json([
-                'message' => 'parameter must be one of: ' . implode(', ', $allowed),
+                'message' => 'parameter must be one of: '.implode(', ', $allowed),
             ], 422);
         }
 
@@ -270,9 +272,10 @@ class ResultsApiController extends Controller
     private function authUser(Request $request): AppUser
     {
         $user = $request->attributes->get('auth_user');
-        if (!$user instanceof AppUser) {
+        if (! $user instanceof AppUser) {
             abort(response()->json(['message' => 'Unauthenticated'], 401));
         }
+
         return $user;
     }
 
@@ -281,11 +284,14 @@ class ResultsApiController extends Controller
         $user = $this->authUser($request);
 
         $farm = Farm::find($farmId);
-        if (!$farm) {
+        if (! $farm) {
             abort(404);
         }
         if ((int) $farm->app_user_id !== (int) $user->id) {
             abort(403);
+        }
+        if ($farm->hidden_at !== null) {
+            abort(404);
         }
 
         return $farm;
@@ -295,7 +301,7 @@ class ResultsApiController extends Controller
     {
         $date = (string) $request->query('date', '');
 
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             abort(response()->json(['message' => 'invalid_date'], 422));
         }
 
@@ -317,9 +323,8 @@ class ResultsApiController extends Controller
      * - 当日pointsを基準に前回pointsから最近傍を1つ選ぶ
      * - Haversine距離 <= 3.0m の場合のみマッチ成功
      *
-     * @param array{lat: float|null, lng: float|null} $currentPoint
-     * @param array<int, array{lat: float|null, lng: float|null}> $previousPoints
-     * @return array|null
+     * @param  array{lat: float|null, lng: float|null}  $currentPoint
+     * @param  array<int, array{lat: float|null, lng: float|null}>  $previousPoints
      */
     private function findNearestWithin3m(array $currentPoint, array $previousPoints): ?array
     {
@@ -354,4 +359,3 @@ class ResultsApiController extends Controller
         return null;
     }
 }
-
