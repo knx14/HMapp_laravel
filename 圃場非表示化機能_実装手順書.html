@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>圃場非表示化機能 実装手順書</title>
+<style>
+  :root{
+    --green:#2f6b4f;
+    --green-light:#eaf3ee;
+    --gray-bg:#f6f7f8;
+    --border:#dfe3e6;
+    --text:#26292b;
+    --sub:#6b7278;
+    --code-bg:#1e2124;
+    --code-text:#e8e8e8;
+    --warn-bg:#fff6e5;
+    --warn-border:#e8b93d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    color:var(--text);
+    line-height:1.8;
+    max-width:920px;
+    margin:0 auto;
+    padding:40px 24px 80px;
+    background:#fff;
+  }
+  h1{
+    font-size:28px;
+    margin-bottom:4px;
+  }
+  .status-badge{
+    display:inline-block;
+    background:var(--green-light);
+    color:var(--green);
+    border:1px solid var(--green);
+    border-radius:6px;
+    padding:3px 12px;
+    font-size:13px;
+    font-weight:bold;
+    margin:8px 0 24px;
+  }
+  h2{
+    font-size:20px;
+    border-left:6px solid var(--green);
+    padding-left:10px;
+    margin-top:44px;
+    margin-bottom:16px;
+  }
+  h3{
+    font-size:16px;
+    color:var(--green);
+    margin-top:28px;
+    margin-bottom:10px;
+    border-bottom:2px solid var(--border);
+    padding-bottom:6px;
+  }
+  h4{
+    font-size:14.5px;
+    margin-top:20px;
+    margin-bottom:8px;
+  }
+  p{margin:8px 0;}
+  .lead{
+    background:var(--gray-bg);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:16px 20px;
+    font-size:14.5px;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:14px 0 20px;
+    font-size:14px;
+  }
+  th,td{
+    border:1px solid var(--border);
+    padding:8px 10px;
+    text-align:left;
+    vertical-align:top;
+  }
+  th{
+    background:var(--green-light);
+    color:var(--green);
+    font-weight:bold;
+    white-space:nowrap;
+  }
+  code{
+    background:#eef0f1;
+    padding:1px 6px;
+    border-radius:4px;
+    font-size:0.92em;
+    font-family:"SFMono-Regular",Consolas,"Courier New",monospace;
+  }
+  pre{
+    background:var(--code-bg);
+    color:var(--code-text);
+    padding:16px 18px;
+    border-radius:8px;
+    overflow-x:auto;
+    font-size:13.5px;
+    line-height:1.6;
+    margin:10px 0 20px;
+  }
+  pre code{
+    background:none;
+    padding:0;
+    color:inherit;
+  }
+  .step{
+    display:flex;
+    gap:14px;
+    margin:18px 0;
+  }
+  .step-num{
+    flex:0 0 30px;
+    height:30px;
+    border-radius:50%;
+    background:var(--green);
+    color:#fff;
+    font-weight:bold;
+    font-size:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .step-body{flex:1;}
+  .step-body p.file{
+    color:var(--sub);
+    font-size:13px;
+    margin:2px 0 6px;
+  }
+  .note{
+    background:var(--warn-bg);
+    border:1px solid var(--warn-border);
+    border-radius:8px;
+    padding:12px 16px;
+    font-size:13.5px;
+    margin:14px 0;
+  }
+  .note::before{
+    content:"⚠ 注意";
+    display:block;
+    font-weight:bold;
+    color:#8a6d1a;
+    margin-bottom:4px;
+  }
+  .section-block{
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:20px 24px;
+    margin-bottom:28px;
+  }
+  .tag{
+    display:inline-block;
+    font-size:12px;
+    padding:2px 9px;
+    border-radius:12px;
+    font-weight:bold;
+    margin-right:6px;
+  }
+  .tag-laravel{background:#fde8e0;color:#c1440e;}
+  .tag-flutter{background:#e3f0fb;color:#1b6ec2;}
+  .checklist li{margin:4px 0;}
+  ul{margin:6px 0;padding-left:22px;}
+  .toc{
+    background:var(--gray-bg);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:16px 24px;
+    font-size:14px;
+  }
+  .toc a{color:var(--green);text-decoration:none;}
+  .toc a:hover{text-decoration:underline;}
+  footer{
+    margin-top:60px;
+    padding-top:16px;
+    border-top:1px solid var(--border);
+    color:var(--sub);
+    font-size:12.5px;
+  }
+</style>
+</head>
+<body>
+
+<h1>圃場非表示化機能 実装手順書</h1>
+<span class="status-badge">ステータス: 未着手</span>
+
+<p class="lead">
+測定データが紐づく圃場は物理削除できない現行仕様を維持しつつ、ユーザからは「削除」と同等の体験で
+圃場一覧・各種画面から見えなくする（非表示化＝ソフトアーカイブ）機能を追加する。
+測定データそのものは会社資産として保持し続け、物理削除は行わない。
+</p>
+
+<div class="toc">
+<strong>目次</strong>
+<ul>
+  <li><a href="#overview">0. 実装方針サマリ</a></li>
+  <li><a href="#laravel">1. Laravel側（バックエンド）</a></li>
+  <li><a href="#flutter">2. Flutter側（モバイルアプリ）</a></li>
+  <li><a href="#check">3. 影響範囲チェックリスト</a></li>
+  <li><a href="#release">4. リリース・ロールバック手順</a></li>
+</ul>
+</div>
+
+<h2 id="overview">0. 実装方針サマリ</h2>
+<table>
+  <tr><th>項目</th><th>内容</th></tr>
+  <tr>
+    <td>DB変更</td>
+    <td><code>farms</code> テーブルに <code>hidden_at</code>（nullable timestamp）を追加。既存カラム・既存リレーションは変更しない（非破壊的追加）。</td>
+  </tr>
+  <tr>
+    <td><code>app_user_id</code> の扱い</td>
+    <td>変更しない。所有者情報として維持し、非表示状態の管理には使わない。</td>
+  </tr>
+  <tr>
+    <td>API変更</td>
+    <td><code>DELETE /api/v1/farms/{farm}</code> の内部ロジックを分岐：測定データがなければ従来通り物理削除、あれば <code>hidden_at</code> を設定して非表示化（200を返す）。</td>
+  </tr>
+  <tr>
+    <td>一覧系APIの変更</td>
+    <td>モバイル向け一覧・結果閲覧系APIすべてに <code>hidden_at IS NULL</code> のフィルタを追加。</td>
+  </tr>
+  <tr>
+    <td>Web管理画面</td>
+    <td>フィルタは適用しない（非表示化された圃場も引き続き閲覧可能。将来的に復元ボタンを追加）。</td>
+  </tr>
+  <tr>
+    <td>Flutter側の変更</td>
+    <td>API仕様（エンドポイント・パス）は変更しないため通信層の改修は不要。削除ボタンの確認ダイアログ文言、422分岐処理の見直しが中心。</td>
+  </tr>
+</table>
+
+<!-- ================= LARAVEL ================= -->
+<div class="section-block" id="laravel">
+<h2><span class="tag tag-laravel">Laravel</span>1. バックエンド実装手順</h2>
+
+<h3>1-1. マイグレーション追加</h3>
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <p class="file">対象: <code>database/migrations/xxxx_add_hidden_at_to_farms_table.php</code></p>
+    <p>新規マイグレーションファイルを作成し、<code>farms</code> テーブルに <code>hidden_at</code> カラムを追加する。既存カラムには一切触れない。</p>
+<pre><code>Schema::table('farms', function (Blueprint $table) {
+    $table-&gt;timestamp('hidden_at')-&gt;nullable()-&gt;after('boundary_polygon');
+});</code></pre>
+    <p>down() では単純にカラムを削除する。</p>
+<pre><code>Schema::table('farms', function (Blueprint $table) {
+    $table-&gt;dropColumn('hidden_at');
+});</code></pre>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <p class="file">実行</p>
+<pre><code>php artisan make:migration add_hidden_at_to_farms_table --table=farms
+php artisan migrate</code></pre>
+    <p>ステージング環境のRDSに対して先に適用し、既存クエリに影響が出ないことを確認してから本番適用する。</p>
+  </div>
+</div>
+
+<h3>1-2. Farmモデルの修正</h3>
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <p class="file">対象: <code>app/Models/Farm.php</code></p>
+    <p><code>hidden_at</code> を <code>$casts</code> に datetime として追加し、モバイル向けクエリで使う専用スコープを定義する。</p>
+<pre><code>protected $casts = [
+    'boundary_polygon' =&gt; 'array',
+    'hidden_at' =&gt; 'datetime',
+];
+
+// ユーザに見える圃場のみ
+public function scopeVisible($query)
+{
+    return $query-&gt;whereNull('hidden_at');
+}
+
+// 測定データ（uploads）が1件でも存在するか
+public function hasMeasurementData(): bool
+{
+    return $this-&gt;uploads()-&gt;exists();
+}
+
+public function hide(): void
+{
+    $this-&gt;update(['hidden_at' =&gt; now()]);
+}
+
+public function unhide(): void
+{
+    $this-&gt;update(['hidden_at' =&gt; null]);
+}</code></pre>
+    <p>※ <code>uploads()</code> リレーションが未定義の場合は合わせて定義する（<code>hasMany(Upload::class)</code>）。</p>
+  </div>
+</div>
+
+<h3>1-3. 圃場削除エンドポイントの分岐処理</h3>
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-body">
+    <p class="file">対象: 圃場削除を処理しているコントローラ（例: <code>app/Http/Controllers/Api/FarmController.php</code> の <code>destroy()</code>）</p>
+    <p>現行の「測定データがあれば422」というロジックを、以下のように分岐させる。</p>
+<pre><code>public function destroy(Farm $farm)
+{
+    $this-&gt;authorizeOwner($farm); // 既存の本人確認処理
+
+    if ($farm-&gt;hasMeasurementData()) {
+        $farm-&gt;hide();
+        return response()-&gt;json([
+            'message' =&gt; 'farm_hidden',
+            'farm_id' =&gt; $farm-&gt;id,
+        ], 200);
+    }
+
+    $farm-&gt;delete();
+    return response()-&gt;json(['message' =&gt; 'farm_deleted'], 200);
+}</code></pre>
+  </div>
+</div>
+
+<div class="note">
+既存仕様では測定データがある圃場の削除は <code>422</code> を返して拒否していた。今回の変更により
+<strong>422は返らなくなり、常に200が返る</strong>ため、Flutter側で422を専用エラーとして処理している箇所は
+挙動確認・修正が必須（詳細は2章）。
+</div>
+
+<h3>1-4. 一覧・結果閲覧系APIへのフィルタ適用</h3>
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-body">
+    <p>以下のモバイル向けエンドポイントのクエリに <code>-&gt;visible()</code> を追加する。管理画面（Web）側のクエリには追加しない。</p>
+    <table>
+      <tr><th>エンドポイント</th><th>用途</th><th>対応</th></tr>
+      <tr><td><code>GET /api/v1/farms</code></td><td>圃場一覧（圃場管理タブ）</td><td><code>Farm::visible()-&gt;where('app_user_id', ...)</code></td></tr>
+      <tr><td><code>GET /api/farms/with-latest-result</code></td><td>結果閲覧タブの圃場ごと最新結果</td><td>クエリ起点に <code>visible()</code> を追加</td></tr>
+      <tr><td><code>GET /api/results/latest</code></td><td>直近3件の最新結果</td><td>join元の <code>farms</code> に <code>hidden_at IS NULL</code> 条件を追加</td></tr>
+      <tr><td><code>GET /api/farms/{farmId}/results/dates</code></td><td>指定圃場の計測日一覧</td><td>非表示圃場への直接アクセス時は404を返す（下記参照）</td></tr>
+      <tr><td><code>GET /api/farms/{farmId}/results/map</code></td><td>指定日の地図データ</td><td>同上</td></tr>
+      <tr><td>測定フロー Step3 圃場選択API</td><td>本測定前の圃場選択一覧</td><td><code>visible()</code> を追加</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">6</div>
+  <div class="step-body">
+    <p class="file">対象: 個別圃場を <code>farm_id</code> で直接引く系のエンドポイント（<code>results/dates</code>、<code>results/map</code> など）</p>
+    <p>URLを直接叩かれた場合（キャッシュ・ディープリンク経由等）に非表示圃場のデータが見えてしまわないよう、
+    Route Model Binding後に所有者チェックと同じタイミングで非表示チェックを入れる。</p>
+<pre><code>if ($farm-&gt;hidden_at !== null) {
+    abort(404);
+}</code></pre>
+  </div>
+</div>
+
+<h3>1-5. Web管理画面（任意・推奨）</h3>
+<div class="step">
+  <div class="step-num">7</div>
+  <div class="step-body">
+    <p class="file">対象: <code>/farm-management</code> 画面</p>
+    <p>非表示状態を示すバッジ（例: 「非表示中」）と、<code>unhide()</code> を呼び出す復元ボタンを追加する。
+    管理画面のクエリには <code>visible()</code> を適用せず、全件表示のままとする。</p>
+    <p>優先度は低いため、初期リリースでは「一覧に非表示バッジを出すだけ」でも可。復元ボタンは第2フェーズでも良い。</p>
+  </div>
+</div>
+
+<h3>1-6. テスト観点</h3>
+<ul>
+  <li>測定データがある圃場を削除APIで叩く → <code>hidden_at</code> がセットされ、レコードは残る（物理削除されない）</li>
+  <li>測定データがない圃場を削除APIで叩く → 従来通り物理削除される</li>
+  <li>非表示化後、<code>GET /api/v1/farms</code> 等の一覧系APIに出てこない</li>
+  <li>非表示化した圃場の <code>results/dates</code> 等に直接アクセスすると404になる</li>
+  <li>Web管理画面では非表示化後も一覧・詳細から参照できる</li>
+  <li>他ユーザの圃場に対して削除・非表示化APIが実行できないこと（既存の本人確認ロジックが維持されていること）</li>
+</ul>
+
+<h3>1-7. テスト実施要項（ローカルDocker環境 〜 本番デプロイ）</h3>
+<p>これまでの実装と同様、Laravel側のテストはローカルDocker環境で実施し、動作確認が取れたものを
+<code>main</code> ブランチへマージ、GitHub Actions経由で本番（EC2）にデプロイする。</p>
+
+<h4>a. ローカルDocker環境の準備</h4>
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <p class="file">作業ブランチ作成</p>
+<pre><code>git checkout -b feature/farm-hide
+
+# .env はSQLiteがデフォルトのため、Docker MySQL利用時は
+# .env.example ではなく既存の Docker用 .env（DB_CONNECTION=mysql, DB_HOST=db 等）を
+# 使用していることを確認する</code></pre>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <p class="file">コンテナ起動</p>
+<pre><code>docker compose up -d
+docker compose ps   # nginx / php-fpm(app) / db(mysql) が起動していることを確認</code></pre>
+  </div>
+</div>
+
+<h4>b. マイグレーション適用の確認</h4>
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <p class="file">appコンテナ内でマイグレーション実行</p>
+<pre><code>docker compose exec app php artisan migrate
+
+# farms テーブルに hidden_at が追加されたことを確認
+docker compose exec db mysql -u root -p -e "DESCRIBE farms;"</code></pre>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-body">
+    <p class="file">ロールバック確認（down() の妥当性検証）</p>
+<pre><code>docker compose exec app php artisan migrate:rollback --step=1
+docker compose exec db mysql -u root -p -e "DESCRIBE farms;"   # hidden_at が消えていること
+docker compose exec app php artisan migrate                    # 再度適用して元に戻す</code></pre>
+  </div>
+</div>
+
+<h4>c. Feature Test の追加・実行</h4>
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-body">
+    <p class="file">対象: <code>tests/Feature/FarmDeleteTest.php</code>（新規作成）</p>
+    <p>最低限、以下のケースをPHPUnit（Feature Test）として自動化する。</p>
+<pre><code>public function test_farm_with_measurement_data_is_hidden_not_deleted(): void
+{
+    $farm = Farm::factory()-&gt;has(Upload::factory())-&gt;create();
+
+    $this-&gt;actingAsAppUser($farm-&gt;appUser)
+        -&gt;deleteJson("/api/v1/farms/{$farm-&gt;id}")
+        -&gt;assertOk()
+        -&gt;assertJson(['message' =&gt; 'farm_hidden']);
+
+    $this-&gt;assertDatabaseHas('farms', ['id' =&gt; $farm-&gt;id]);
+    $this-&gt;assertNotNull($farm-&gt;fresh()-&gt;hidden_at);
+}
+
+public function test_farm_without_measurement_data_is_hard_deleted(): void
+{
+    $farm = Farm::factory()-&gt;create();
+
+    $this-&gt;actingAsAppUser($farm-&gt;appUser)
+        -&gt;deleteJson("/api/v1/farms/{$farm-&gt;id}")
+        -&gt;assertOk()
+        -&gt;assertJson(['message' =&gt; 'farm_deleted']);
+
+    $this-&gt;assertDatabaseMissing('farms', ['id' =&gt; $farm-&gt;id]);
+}
+
+public function test_hidden_farm_is_excluded_from_farm_list(): void
+{
+    $farm = Farm::factory()-&gt;create(['hidden_at' =&gt; now()]);
+
+    $this-&gt;actingAsAppUser($farm-&gt;appUser)
+        -&gt;getJson('/api/v1/farms')
+        -&gt;assertOk()
+        -&gt;assertJsonMissing(['id' =&gt; $farm-&gt;id]);
+}</code></pre>
+    <p class="file">実行</p>
+<pre><code>docker compose exec app php artisan test --filter=FarmDeleteTest</code></pre>
+  </div>
+</div>
+
+<h4>d. 手動疎通確認（curl / Tinker）</h4>
+<div class="step">
+  <div class="step-num">6</div>
+  <div class="step-body">
+    <p>自動テストに加え、ローカルDocker上のAPIに対して実際のCognito JWT（またはテスト用トークン発行の仕組み）で
+    疎通確認を行う。</p>
+<pre><code># 圃場一覧（非表示圃場が含まれないことを目視確認）
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v1/farms
+
+# 削除（非表示化）実行
+curl -X DELETE -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8000/api/v1/farms/{farm_id}</code></pre>
+    <p>データ状態の確認・調整が必要な場合は <code>docker compose exec app php artisan tinker</code> で
+    直接 <code>Farm::find($id)</code> 等を操作して確認する。</p>
+  </div>
+</div>
+
+<h4>e. Web管理画面の目視確認</h4>
+<div class="step">
+  <div class="step-num">7</div>
+  <div class="step-body">
+    <p>ローカルDocker上のブラウザアクセス（<code>/farm-management</code>）で、非表示化した圃場が
+    引き続き一覧・詳細に表示されることを目視確認する（<code>visible()</code> スコープが適用されていないことの確認）。</p>
+  </div>
+</div>
+
+<h4>f. PRレビュー〜本番デプロイ</h4>
+<div class="step">
+  <div class="step-num">8</div>
+  <div class="step-body">
+    <p>ローカルDockerでのテスト（自動テスト・手動疎通・管理画面目視）がすべて完了したらPRを作成し、レビューを経て
+    <code>main</code> ブランチへマージする。</p>
+<pre><code>git push origin feature/farm-hide
+# PR作成 → レビュー → main へマージ</code></pre>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">9</div>
+  <div class="step-body">
+    <p><code>main</code> への push をトリガーに GitHub Actions が起動し、これまでと同様の流れで本番デプロイされる。</p>
+<pre><code>main へ push
+  → GitHub Actions: Dockerイメージビルド
+  → ECRへpush
+  → EC2へSSH接続
+  → docker compose down / up
+  → php artisan migrate（本番RDSに hidden_at カラムが追加される）</code></pre>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">10</div>
+  <div class="step-body">
+    <p><strong>本番デプロイ後のスモークテスト</strong>：本番環境で影響のないテスト用圃場（またはデモ用圃場）を用意し、
+    以下を実施して本番反映を確認する。</p>
+    <ul>
+      <li>テスト用圃場（測定データあり）を削除操作 → 一覧から消えること、Web管理画面には残っていること</li>
+      <li>本番DB（RDS）で <code>DESCRIBE farms;</code> を実行し <code>hidden_at</code> カラムの存在を確認</li>
+      <li>既存の正常系（測定データなしの圃場削除、通常の圃場一覧取得）が壊れていないこと</li>
+    </ul>
+  </div>
+</div>
+
+<div class="note">
+本番RDSへの <code>php artisan migrate</code> はデプロイフローに組み込まれているため手動実行は不要だが、
+マイグレーション失敗時は EC2 上で <code>docker compose logs app</code> を確認し、必要であれば
+<code>php artisan migrate:rollback --step=1</code> を手動実行できるようにしておく。
+</div>
+</div>
+
+<!-- ================= FLUTTER ================= -->
+<div class="section-block" id="flutter">
+<h2><span class="tag tag-flutter">Flutter</span>2. モバイルアプリ実装手順</h2>
+
+<p>APIのエンドポイント・パスは変更しないため、通信層（<code>dio</code>クライアント）自体の改修は不要。
+主な対応は「削除操作の文言・確認ダイアログの見直し」と「レスポンスハンドリングの見直し」。</p>
+
+<h3>2-1. 削除確認ダイアログの文言変更</h3>
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <p class="file">対象: <code>lib/features/farms/presentation/</code> 配下、圃場削除の確認ダイアログ</p>
+    <p>「削除すると測定データも失われます」という趣旨の文言が現状ある場合、以下のように変更する。
+    バックエンド側で実際に物理削除されるか非表示化されるかはユーザに区別させる必要はないため、
+    文言は共通で構わない。</p>
+<pre><code>この圃場を一覧から削除しますか？
+※ 測定データがある場合、圃場は一覧から非表示になります
+　 （データ自体は保持されます）</code></pre>
+  </div>
+</div>
+
+<h3>2-2. 削除処理のレスポンスハンドリング見直し</h3>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <p class="file">対象: 圃場削除APIを呼び出しているリポジトリ／サービスクラス（例: <code>lib/features/farms/data/farm_repository.dart</code>）</p>
+    <p>現状 <code>422</code> を「削除不可（測定データあり）」として専用エラーハンドリングしている箇所があれば、
+    その分岐は基本的に到達しなくなる（サーバ側が200を返すようになるため）。ただし後方互換のため
+    422ハンドリング自体はコードに残しておき、想定外エラーとしてログに残す形にしておくのが安全。</p>
+<pre><code>try {
+  final res = await _dio.delete('/api/v1/farms/$farmId');
+  // res.data['message'] は 'farm_deleted' or 'farm_hidden'
+  return FarmDeleteResult.success;
+} on DioException catch (e) {
+  if (e.response?.statusCode == 422) {
+    // 想定外経路。ログのみ残し、ユーザには汎用エラーを表示
+    _logger.w('unexpected 422 on farm delete: ${e.response?.data}');
+  }
+  return FarmDeleteResult.failure;
+}</code></pre>
+  </div>
+</div>
+
+<h3>2-3. 圃場一覧の再取得タイミング確認</h3>
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <p class="file">対象: <code>lib/features/farms/presentation/providers/</code> の一覧系Notifier</p>
+    <p>非表示化はサーバ側でフィルタされるため、削除操作後に一覧APIを再取得（<code>fetchFarms()</code> 等）すれば
+    自動的に画面から消える。ローカルにキャッシュを保持している場合は、削除成功時に該当 <code>farm_id</code> を
+    ローカルリストからも即時除去し、体感速度を落とさないようにする。</p>
+  </div>
+</div>
+
+<h3>2-4. 測定フロー（圃場選択）・結果閲覧タブへの波及確認</h3>
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-body">
+    <p>以下の画面は同じ一覧系APIまたは同種のAPIを参照しているため、Laravel側の <code>visible()</code> 対応が
+    入れば自動的に非表示圃場が除外される。Flutter側での追加改修は基本不要だが、疎通確認は行うこと。</p>
+    <ul>
+      <li>測定タブ Step3「圃場選択」画面</li>
+      <li>結果閲覧タブ「最新結果」「圃場ごとの結果一覧」</li>
+      <li>圃場管理タブの圃場一覧</li>
+    </ul>
+  </div>
+</div>
+
+<h3>2-5. オフラインキュー（未アップロードデータ）との整合性</h3>
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-body">
+    <p class="file">対象: <code>PendingUploadStore</code></p>
+    <p>非表示化した圃場に対する未アップロードデータ（<code>pending_uploads.json</code>）が端末内に残っている場合、
+    アップロード自体はサーバ側で拒否していない（<code>farm_id</code> は生きたレコードのまま）ため技術的には
+    アップロード可能。ただしユーザ体験としては「非表示にしたはずの圃場にデータが積み上がる」状態になり得るため、
+    未アップロード一覧画面で対象圃場が非表示化されている場合は、警告表示を出す対応を検討する
+    （必須ではないため、初期リリースでは対象外としても良い）。</p>
+  </div>
+</div>
+
+<h3>2-6. テスト観点</h3>
+<ul>
+  <li>測定データありの圃場を削除操作 → 一覧から消える／エラー表示が出ないこと</li>
+  <li>測定データなしの圃場を削除操作 → 従来通り一覧から消えること</li>
+  <li>削除後、測定タブの圃場選択に対象圃場が出てこないこと</li>
+  <li>削除後、結果閲覧タブに対象圃場の過去結果が出てこないこと</li>
+  <li>オフライン時に削除操作をした場合の挙動（オフライン検知〜リトライ動線）が既存仕様と矛盾しないこと</li>
+</ul>
+</div>
+
+<!-- ================= CHECKLIST ================= -->
+<h2 id="check">3. 影響範囲チェックリスト</h2>
+<table class="checklist">
+  <tr><th>種別</th><th>対象</th><th>状態</th></tr>
+  <tr><td>DB</td><td><code>farms.hidden_at</code> マイグレーション</td><td>未着手</td></tr>
+  <tr><td>Laravel</td><td><code>Farm</code> モデル（scope / hide / unhide）</td><td>未着手</td></tr>
+  <tr><td>Laravel</td><td><code>DELETE /api/v1/farms/{farm}</code> 分岐処理</td><td>未着手</td></tr>
+  <tr><td>Laravel</td><td><code>GET /api/v1/farms</code></td><td>未着手</td></tr>
+  <tr><td>Laravel</td><td><code>GET /api/farms/with-latest-result</code></td><td>未着手</td></tr>
+  <tr><td>Laravel</td><td><code>GET /api/results/latest</code></td><td>未着手</td></tr>
+  <tr><td>Laravel</td><td><code>GET /api/farms/{farmId}/results/dates</code>（404化）</td><td>未着手</td></tr>
+  <tr><td>Laravel</td><td><code>GET /api/farms/{farmId}/results/map</code>（404化）</td><td>未着手</td></tr>
+  <tr><td>Laravel</td><td>測定フロー Step3 圃場選択API</td><td>未着手</td></tr>
+  <tr><td>Laravel</td><td>Web管理画面（非表示バッジ・復元ボタン）</td><td>任意（第2フェーズ可）</td></tr>
+  <tr><td>Flutter</td><td>削除確認ダイアログ文言</td><td>未着手</td></tr>
+  <tr><td>Flutter</td><td>削除APIレスポンスハンドリング（422分岐の見直し）</td><td>未着手</td></tr>
+  <tr><td>Flutter</td><td>一覧系Provider再取得・ローカル除去</td><td>未着手</td></tr>
+  <tr><td>Flutter</td><td>未アップロードキューとの整合性（任意）</td><td>任意</td></tr>
+</table>
+
+<!-- ================= RELEASE ================= -->
+<h2 id="release">4. リリース・ロールバック手順</h2>
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <p><strong>デプロイ順序</strong>：Laravel側（マイグレーション＋API）を先にリリースし、Flutter側は後追いでリリースする。
+    Laravel側が先行しても、既存のFlutterクライアント（旧バージョン）は従来通り「200 or 422」のいずれかを受け取るだけで、
+    422時のエラーハンドリングは残っているため後方互換性は保たれる。</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <p><strong>ロールバック</strong>：問題発生時は <code>DELETE</code> エンドポイントの分岐処理のみを旧ロジック（測定データありなら常に422）に戻せば、
+    マイグレーション（<code>hidden_at</code> カラム）はそのまま残しておいて問題ない。カラムを追加しただけの状態は
+    既存機能に影響しないため、DBロールバックは基本不要。</p>
+  </div>
+</div>
+
+<footer>
+HenryMonitor 圃場非表示化機能 実装手順書 / Laravel・Flutter 両担当者向け
+</footer>
+
+</body>
+</html>
