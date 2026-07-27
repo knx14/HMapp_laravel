@@ -14,6 +14,7 @@ use App\Services\PolygonCentroidService;
 use App\Services\Results\ResultsAggregationService;
 use App\Support\SoilParameterUnits;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ManualResultController extends Controller
@@ -154,5 +155,27 @@ class ManualResultController extends Controller
                 'upload_id' => $upload->id,
             ]);
         });
+    }
+
+    public function destroy(Request $request, Upload $upload): JsonResponse
+    {
+        $user = $request->attributes->get('auth_user');
+        if (!$user instanceof AppUser) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $upload->load('farm');
+
+        if ((int) $upload->farm->app_user_id !== (int) $user->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        if (($upload->measurement_parameters['manual_entry'] ?? false) !== true) {
+            return response()->json(['message' => 'manual_result_required'], 422);
+        }
+
+        $upload->delete();
+
+        return response()->json(['message' => 'deleted']);
     }
 }
