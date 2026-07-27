@@ -37,6 +37,7 @@ Route::middleware(['cognito.jwt'])->group(function () {
     Route::get('/farms/{farmId}/results/timeseries', [ResultsApiController::class, 'farmResultTimeseries']);
     Route::get('/farms/{farmId}/timeline', [ResultsApiController::class, 'farmTimeline']);
     Route::post('/manual-results', [ManualResultController::class, 'store']);
+    Route::put('/manual-results/{upload}', [ManualResultController::class, 'update']);
 });
 
 // 分析サマリー一覧API

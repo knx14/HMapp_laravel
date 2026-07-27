@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreManualResultRequest;
+use App\Http\Requests\Api\UpdateManualResultRequest;
 use App\Models\AnalysisResult;
 use App\Models\AppUser;
 use App\Models\Farm;
@@ -89,6 +90,69 @@ class ManualResultController extends Controller
             }
 
             return response()->json(['upload_id' => $upload->id], 201);
+        });
+    }
+
+    public function update(UpdateManualResultRequest $request, Upload $upload): JsonResponse
+    {
+        $user = $request->attributes->get('auth_user');
+        if (!$user instanceof AppUser) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $upload->load(['farm', 'analysisResult']);
+
+        if ((int) $upload->farm->app_user_id !== (int) $user->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        if (($upload->measurement_parameters['manual_entry'] ?? false) !== true) {
+            return response()->json(['message' => 'manual_result_required'], 422);
+        }
+
+        if (!$upload->analysisResult) {
+            return response()->json(['message' => 'analysis_result_not_found'], 422);
+        }
+
+        $date = $request->input('measurement_date');
+        $duplicateExists = Upload::query()
+            ->where('farm_id', $upload->farm_id)
+            ->whereKeyNot($upload->id)
+            ->where('status', Upload::STATUS_COMPLETED)
+            ->whereDate('measurement_date', $date)
+            ->whereJsonContains('measurement_parameters->manual_entry', true)
+            ->exists();
+
+        if ($duplicateExists) {
+            return response()->json(['message' => 'measurement_date_already_exists'], 422);
+        }
+
+        return DB::transaction(function () use ($request, $upload) {
+            $upload->update([
+                'measurement_date' => $request->input('measurement_date'),
+            ]);
+
+            ResultValue::query()
+                ->where('analysis_result_id', $upload->analysisResult->id)
+                ->delete();
+
+            foreach ($request->input('values', []) as $paramName => $value) {
+                if ($value === null || $value === '') {
+                    continue;
+                }
+
+                ResultValue::create([
+                    'analysis_result_id' => $upload->analysisResult->id,
+                    'parameter_name' => (string) $paramName,
+                    'parameter_value' => $value,
+                    'unit' => SoilParameterUnits::unitFor((string) $paramName),
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'updated',
+                'upload_id' => $upload->id,
+            ]);
         });
     }
 }
