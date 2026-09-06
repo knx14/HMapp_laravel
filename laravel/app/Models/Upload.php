@@ -13,6 +13,7 @@ class Upload extends Model
         'farm_id',
         'file_path',
         'measurement_date',
+        'measurement_number',
         'measurement_parameters',
         'note1',
         'note2',
@@ -22,6 +23,7 @@ class Upload extends Model
 
     protected $casts = [
         'measurement_date' => 'date',
+        'measurement_number' => 'integer',
         'measurement_parameters' => 'array',
     ];
 

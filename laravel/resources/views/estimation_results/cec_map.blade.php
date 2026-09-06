@@ -16,6 +16,13 @@
             </a>
         </div>
 
+        @if(session('success'))
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">{{ session('success') }}</div>
+        @endif
+        @if($errors->any())
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{{ $errors->first() }}</div>
+        @endif
+
         <div class="bg-white rounded-2xl shadow p-6 mb-6">
             <h2 class="text-xl font-semibold mb-2">圃場情報</h2>
             <p class="text-gray-700"><span class="font-semibold">圃場ID:</span> {{ $farm->id }}</p>
@@ -260,8 +267,8 @@
                 if (typeof p.lat !== 'number' || typeof p.lng !== 'number') return;
                 
                 const cecValue = p.cec ?? 0;
-                const labelText = cecValue.toFixed(1);
                 const heatmapColor = getHeatmapColor(cecValue);
+                const hasNumber = p.measurement_number !== null && p.measurement_number !== undefined;
                 
                 // カスタムマーカーアイコンを作成
                 const markerIcon = {
@@ -277,13 +284,13 @@
                     position: { lat: p.lat, lng: p.lng },
                     map,
                     icon: markerIcon,
-                    label: { 
-                        text: labelText, 
+                    label: hasNumber ? { 
+                        text: String(p.measurement_number), 
                         className: 'cec-heatmap-label',
                         color: '#ffffff',
                         fontSize: '12px',
                         fontWeight: 'bold'
-                    }
+                    } : undefined
                 });
                 
                 marker.addListener('click', () => {
@@ -292,7 +299,9 @@
                         const unitText = v.unit ? ' ' + v.unit : '';
                         return `<tr><td class="pr-4 py-0.5 text-gray-700">${v.parameter}</td><td class="text-gray-900 font-semibold">${v.value}${unitText}</td></tr>`;
                     }).join('');
-                    const html = `<div class="p-1"><div class="font-bold mb-1">成分一覧</div><table>${rows}</table><div class="mt-2 text-xs text-blue-600">💡 下のレーダーチャートで詳細表示</div></div>`;
+                    const numberText = hasNumber ? p.measurement_number : '—';
+                    const cecText = p.cec === null || p.cec === undefined ? '—' : Number(p.cec).toFixed(1);
+                    const html = `<div class="p-1"><div class="font-bold mb-1">測定番号 ${numberText}</div><div class="text-xs text-gray-600 mb-1">CEC ${cecText}</div><table>${rows}</table><div class="mt-2 text-xs text-blue-600">💡 下のレーダーチャートで詳細表示</div></div>`;
                     info.setContent(html);
                     info.open({ map, anchor: marker });
                     
@@ -374,7 +383,7 @@
                 data: {
                     labels: ['K2O飽和度', 'CaO飽和度', 'MgO飽和度'],
                     datasets: [{
-                        label: `地点${pointIndex + 1}`,
+                        label: point.measurement_number != null ? `地点${point.measurement_number}` : '地点',
                         data: [
                             calculateSaturation(k2o, cec),
                             calculateSaturation(cao, cec),

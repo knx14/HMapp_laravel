@@ -72,7 +72,9 @@
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $user->id }}</td>
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $user->cognito_sub ?? '-' }}</td>
-                                    <td class="px-8 py-4 text-sm text-gray-900">{{ $user->name ?? '-' }}</td>
+                                    <td class="px-8 py-4 text-sm text-gray-900">
+                                        <a href="{{ route('user-management.show', $user) }}" class="text-blue-600 hover:text-blue-800 font-semibold">{{ $user->name ?? '-' }}</a>
+                                    </td>
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $user->email ?? '-' }}</td>
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $user->ja_name ?? '-' }}</td>
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $user->created_at ? $user->created_at->format('Y-m-d H:i') : '-' }}</td>
