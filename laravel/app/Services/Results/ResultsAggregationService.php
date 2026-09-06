@@ -111,6 +111,8 @@ class ResultsAggregationService
      *
      * @return array<int, array{
      *   point_id:int,
+     *   upload_id:int,
+     *   measurement_number:int|null,
      *   lat: float|null,
      *   lng: float|null,
      *   created_at: string|null,
@@ -124,9 +126,14 @@ class ResultsAggregationService
             return [];
         }
 
+        $uploadsById = Upload::query()
+            ->whereIn('id', $uploadIds)
+            ->get(['id', 'measurement_number'])
+            ->keyBy('id');
+
         $analysisPoints = AnalysisResult::query()
             ->whereIn('upload_id', $uploadIds)
-            ->get(['id', 'latitude', 'longitude', 'created_at']);
+            ->get(['id', 'upload_id', 'latitude', 'longitude', 'created_at']);
 
         if ($analysisPoints->isEmpty()) {
             return [];
@@ -140,11 +147,15 @@ class ResultsAggregationService
             ->get(['analysis_result_id', 'parameter_name', 'parameter_value', 'unit'])
             ->groupBy('analysis_result_id');
 
-        return $analysisPoints->map(function ($p) use ($valuesByPoint) {
+        $points = $analysisPoints->map(function ($p) use ($valuesByPoint, $uploadsById) {
             $valuesForPoint = $valuesByPoint->get($p->id, collect());
+            $upload = $uploadsById->get($p->upload_id);
+            $measurementNumber = $upload?->measurement_number;
 
             return [
                 'point_id' => (int) $p->id,
+                'upload_id' => (int) $p->upload_id,
+                'measurement_number' => is_null($measurementNumber) ? null : (int) $measurementNumber,
                 'lat' => is_null($p->latitude) ? null : (float) $p->latitude,
                 'lng' => is_null($p->longitude) ? null : (float) $p->longitude,
                 'created_at' => $p->created_at?->toIso8601String(),
@@ -156,7 +167,29 @@ class ResultsAggregationService
                     ];
                 })->values()->all(),
             ];
-        })->values()->all();
+        });
+
+        return $points
+            ->sort(function (array $a, array $b): int {
+                $aNumber = $a['measurement_number'];
+                $bNumber = $b['measurement_number'];
+                if ($aNumber === null && $bNumber === null) {
+                    return strcmp((string) ($a['created_at'] ?? ''), (string) ($b['created_at'] ?? ''));
+                }
+                if ($aNumber === null) {
+                    return 1;
+                }
+                if ($bNumber === null) {
+                    return -1;
+                }
+                if ($aNumber !== $bNumber) {
+                    return $aNumber <=> $bNumber;
+                }
+
+                return strcmp((string) ($a['created_at'] ?? ''), (string) ($b['created_at'] ?? ''));
+            })
+            ->values()
+            ->all();
     }
 
     /**

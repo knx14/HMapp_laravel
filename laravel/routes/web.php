@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth'])->group(function () {
 	Route::get('/users', [UserManagementController::class, 'index'])->name('user-management.index');
+	Route::get('/users/{user}', [UserManagementController::class, 'show'])->name('user-management.show');
 	Route::get('/farms', [FarmManagementController::class, 'index'])->name('farm-management.index');
 	Route::get('/farms/create', [FarmManagementController::class, 'create'])->name('farm-management.create');
 	Route::post('/farms', [FarmManagementController::class, 'store'])->name('farm-management.store');

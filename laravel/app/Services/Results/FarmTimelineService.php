@@ -115,7 +115,7 @@ class FarmTimelineService
         }
 
         $workLogRows = DB::select('
-            SELECT work_date AS date, work_type, title, detail, amount_value, amount_unit
+            SELECT id, work_date AS date, work_type, title, detail, amount_value, amount_unit
             FROM work_logs
             WHERE farm_id = ?
             ORDER BY work_date ASC, id ASC
@@ -123,6 +123,7 @@ class FarmTimelineService
 
         $workLogItems = array_map(fn ($row) => [
             'type' => 'work_log',
+            'id' => (int) $row->id,
             'date' => (string) $row->date,
             'work_type' => (string) $row->work_type,
             'title' => $row->title,

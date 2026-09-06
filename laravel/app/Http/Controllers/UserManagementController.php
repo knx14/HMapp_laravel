@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\AppUser;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class UserManagementController extends Controller
 {
@@ -35,6 +36,11 @@ class UserManagementController extends Controller
 			],
 		]);
 	}
+
+	public function show(AppUser $user): View
+	{
+		return view('user_management.show', [
+			'user' => $user,
+		]);
+	}
 }
-
-
