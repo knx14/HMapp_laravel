@@ -30,5 +30,3 @@ class AnalysisResult extends Model
         return $this->hasMany(ResultValue::class);
     }
 }
-
-

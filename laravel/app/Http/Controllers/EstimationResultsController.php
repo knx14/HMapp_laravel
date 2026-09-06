@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Farm;
-use App\Models\Upload;
 use App\Models\AnalysisResult;
+use App\Models\Farm;
 use App\Models\ResultValue;
-use Illuminate\Support\Facades\Validator;
+use App\Models\Upload;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class EstimationResultsController extends Controller
 {
@@ -81,7 +81,7 @@ class EstimationResultsController extends Controller
 
         // analysis_results から該当アップロード群の座標とIDを取得
         $analysisPoints = AnalysisResult::whereIn('upload_id', $uploadIds)
-            ->get(['id', 'latitude', 'longitude']);
+            ->get(['id', 'upload_id', 'latitude', 'longitude']);
 
         $analysisIds = $analysisPoints->pluck('id')->all();
 
@@ -90,11 +90,19 @@ class EstimationResultsController extends Controller
             ->get(['analysis_result_id', 'parameter_name', 'parameter_value', 'unit'])
             ->groupBy('analysis_result_id');
 
-        // フロントに渡す形 {lat, lng, values: [{parameter, value, unit}], cec} の配列
-        $points = $analysisPoints->map(function ($p) use ($allValues) {
+        $uploadsById = Upload::query()
+            ->whereIn('id', $uploadIds)
+            ->get(['id', 'measurement_number'])
+            ->keyBy('id');
+
+        // フロントに渡す形 {lat, lng, values: [{parameter, value, unit}], cec, measurement_number} の配列
+        $points = $analysisPoints->map(function ($p) use ($allValues, $uploadsById) {
             $valuesForPoint = $allValues->get($p->id, collect());
             $cecValue = optional($valuesForPoint->firstWhere('parameter_name', 'CEC'))->parameter_value;
+            $measurementNumber = $uploadsById->get($p->upload_id)?->measurement_number;
             return [
+                'upload_id' => (int) $p->upload_id,
+                'measurement_number' => is_null($measurementNumber) ? null : (int) $measurementNumber,
                 'lat' => (float) $p->latitude,
                 'lng' => (float) $p->longitude,
                 'cec' => is_null($cecValue) ? null : (float) $cecValue,
@@ -106,6 +114,20 @@ class EstimationResultsController extends Controller
                     ];
                 })->values(),
             ];
+        })->sort(function (array $a, array $b): int {
+            $aNumber = $a['measurement_number'];
+            $bNumber = $b['measurement_number'];
+            if ($aNumber === null && $bNumber === null) {
+                return ($a['upload_id'] ?? 0) <=> ($b['upload_id'] ?? 0);
+            }
+            if ($aNumber === null) {
+                return 1;
+            }
+            if ($bNumber === null) {
+                return -1;
+            }
+
+            return $aNumber <=> $bNumber;
         })->values();
 
         $boundaryPolygon = $farm->boundary_polygon ?? [];

@@ -39,7 +39,7 @@ class AnalysisResultController extends Controller
 
     /**
      * DELETE /api/v1/results/{analysisResult}
-     * 測定地点とその推定値を削除する。
+     * 測定そのもの（upload）と、その推定結果を削除する。
      */
     public function destroy(Request $request, AnalysisResult $analysisResult): JsonResponse
     {
@@ -48,8 +48,10 @@ class AnalysisResultController extends Controller
         }
 
         DB::transaction(function () use ($analysisResult): void {
+            $upload = $analysisResult->upload()->first();
             $analysisResult->resultValues()->delete();
             $analysisResult->delete();
+            $upload?->delete();
         });
 
         return response()->json(['message' => 'deleted']);

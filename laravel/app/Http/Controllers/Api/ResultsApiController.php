@@ -221,6 +221,8 @@ class ResultsApiController extends Controller
 
             $outPoints[] = [
                 'point_id' => (int) $cp['point_id'],
+                'upload_id' => (int) $cp['upload_id'],
+                'measurement_number' => $cp['measurement_number'] ?? null,
                 'lat' => $cp['lat'],
                 'lng' => $cp['lng'],
                 'current_values' => $currentValues,
