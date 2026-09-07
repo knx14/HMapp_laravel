@@ -6,9 +6,11 @@ use App\Models\AnalysisResult;
 use App\Models\Farm;
 use App\Models\ResultValue;
 use App\Models\Upload;
+use App\Support\SoilParameterUnits;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class EstimationResultsController extends Controller
 {
@@ -110,7 +112,7 @@ class EstimationResultsController extends Controller
                     return [
                         'parameter' => $rv->parameter_name,
                         'value' => (float) $rv->parameter_value,
-                        'unit' => $rv->unit ?? null,
+                        'unit' => SoilParameterUnits::displayUnit((string) $rv->parameter_name, $rv->unit),
                     ];
                 })->values(),
             ];
@@ -265,6 +267,7 @@ class EstimationResultsController extends Controller
             'farm' => $farm,
             'analysisResult' => $analysisResult,
             'existingValues' => $existingValues,
+            'parameterUnits' => SoilParameterUnits::map(),
         ]);
     }
 
@@ -283,10 +286,16 @@ class EstimationResultsController extends Controller
 
         $validator = Validator::make($request->all(), [
             'parameters' => 'required|array',
-            'parameters.*.name' => 'required|string|max:255',
+            'parameters.*.name' => ['required', 'string', Rule::in(SoilParameterUnits::allowedNames())],
             'parameters.*.value' => 'required|numeric',
-            'parameters.*.unit' => 'nullable|string|max:50',
         ]);
+
+        $validator->after(function ($validator) use ($request) {
+            $names = collect($request->input('parameters', []))->pluck('name')->filter();
+            if ($names->count() !== $names->unique()->count()) {
+                $validator->errors()->add('parameters', 'パラメータ名が重複しています。');
+            }
+        });
 
         if ($validator->fails()) {
             return redirect()->back()
@@ -301,11 +310,12 @@ class EstimationResultsController extends Controller
 
             // 新しいResultValueを保存
             foreach ($request->parameters as $param) {
+                $parameterName = (string) $param['name'];
                 ResultValue::create([
                     'analysis_result_id' => $analysisResultId,
-                    'parameter_name' => $param['name'],
+                    'parameter_name' => $parameterName,
                     'parameter_value' => $param['value'],
-                    'unit' => $param['unit'] ?? null,
+                    'unit' => SoilParameterUnits::unitFor($parameterName),
                 ]);
             }
 

@@ -3,6 +3,7 @@
 namespace App\Services\Results;
 
 use App\Models\Upload;
+use App\Support\SoilParameterUnits;
 use Illuminate\Support\Facades\DB;
 
 class ResultsTimeseriesService
@@ -26,8 +27,7 @@ class ResultsTimeseriesService
                 ROUND(AVG(rv.parameter_value), 2) AS avg_value,
                 ROUND(MIN(rv.parameter_value), 2) AS min_value,
                 ROUND(MAX(rv.parameter_value), 2) AS max_value,
-                COUNT(DISTINCT ar.id) AS count_points,
-                MAX(rv.unit) AS unit
+                COUNT(DISTINCT ar.id) AS count_points
             FROM uploads u
             INNER JOIN analysis_results ar ON ar.upload_id = u.id
             LEFT JOIN result_values rv
@@ -40,8 +40,6 @@ class ResultsTimeseriesService
             HAVING COUNT(rv.id) > 0
             ORDER BY u.measurement_date ASC
         ', [$parameter, $farmId, Upload::STATUS_COMPLETED]);
-
-        $unit = $rows !== [] ? $rows[0]->unit : null;
 
         $points = array_map(fn ($row) => [
             'date' => (string) $row->date,
@@ -60,7 +58,7 @@ class ResultsTimeseriesService
 
         return [
             'parameter' => $parameter,
-            'unit' => $unit,
+            'unit' => SoilParameterUnits::unitFor($parameter),
             'points' => $points,
             'farm_average' => $this->aggregation->computeFarmAverage($farmId, $parameter),
             'work_logs' => array_map(fn ($row) => [
