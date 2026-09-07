@@ -5,6 +5,7 @@ namespace App\Services\Results;
 use App\Models\AnalysisResult;
 use App\Models\ResultValue;
 use App\Models\Upload;
+use App\Support\SoilParameterUnits;
 
 class ResultsAggregationService
 {
@@ -163,7 +164,7 @@ class ResultsAggregationService
                     return [
                         'parameter' => (string) $rv->parameter_name,
                         'value' => is_null($rv->parameter_value) ? null : (float) $rv->parameter_value,
-                        'unit' => $rv->unit ?? null,
+                        'unit' => SoilParameterUnits::displayUnit((string) $rv->parameter_name, $rv->unit),
                     ];
                 })->values()->all(),
             ];

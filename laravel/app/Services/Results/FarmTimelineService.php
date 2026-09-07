@@ -3,6 +3,7 @@
 namespace App\Services\Results;
 
 use App\Models\Upload;
+use App\Support\SoilParameterUnits;
 use Illuminate\Support\Facades\DB;
 
 class FarmTimelineService
@@ -57,8 +58,7 @@ class FarmTimelineService
                 rv.parameter_name,
                 ROUND(AVG(rv.parameter_value), 2) AS avg_value,
                 ROUND(MIN(rv.parameter_value), 2) AS min_value,
-                ROUND(MAX(rv.parameter_value), 2) AS max_value,
-                MAX(rv.unit) AS unit
+                ROUND(MAX(rv.parameter_value), 2) AS max_value
             FROM uploads u
             INNER JOIN analysis_results ar ON ar.upload_id = u.id
             INNER JOIN result_values rv ON rv.analysis_result_id = ar.id
@@ -74,11 +74,12 @@ class FarmTimelineService
         foreach ($valueRows as $row) {
             $date = (string) $row->date;
             $source = (string) $row->measurement_source;
-            $valuesByDateAndSource[$date][$source][(string) $row->parameter_name] = [
+            $parameterName = (string) $row->parameter_name;
+            $valuesByDateAndSource[$date][$source][$parameterName] = [
                 'avg' => (float) $row->avg_value,
                 'min' => (float) $row->min_value,
                 'max' => (float) $row->max_value,
-                'unit' => $row->unit,
+                'unit' => SoilParameterUnits::displayUnit($parameterName),
             ];
         }
 
