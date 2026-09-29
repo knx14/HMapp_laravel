@@ -1,18 +1,18 @@
 @php
-    $user = Auth::user();
+    $authUser = Auth::user();
 @endphp
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', '管理者ダッシュボード')</title>
+    <title>@yield('title', 'HenryMonitor')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-[#f5f7fa] min-h-screen flex flex-col">
 
     <header class="fixed top-0 left-0 w-full bg-blue-600 text-white text-2xl font-bold px-8 py-6 flex items-center justify-between shadow-lg z-50">
-        <span>@yield('header-title', '管理者ダッシュボード')</span>
+        <span>@yield('header-title', 'HenryMonitor')</span>
         <div x-data="{ open: false }" @click.outside="open = false" class="relative">
             <button @click="open = !open" class="flex items-center space-x-2 focus:outline-none">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -30,11 +30,12 @@
                  class="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg py-1 z-50 origin-top-right"
                  style="display: none;">
                 <div class="px-4 py-3 text-sm text-gray-900">
-                    <div class="font-semibold">{{ $user->name }}</div>
-                    <div class="text-xs text-gray-500">{{ $user->email }}</div>
+                    <div class="font-semibold">{{ $authUser->name }}</div>
+                    <div class="text-xs text-gray-500">{{ $authUser->email }}</div>
+                    <div class="text-xs text-gray-500 mt-1">{{ $authUser->isAdmin() ? '管理者' : '一般ユーザー' }}</div>
                 </div>
                 <hr class="border-gray-200">
-                <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">プロフィール</a>
+                <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">設定</a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">ログアウト</button>
@@ -47,6 +48,7 @@
         <aside class="fixed top-[72px] left-0 h-[calc(100vh-72px)] w-64 bg-white shadow-lg flex flex-col p-6 flex-shrink-0 z-40">
             <nav class="flex-1">
                 <ul class="space-y-2">
+                    @can('admin')
                     <li>
                         <a href="{{ route('dashboard') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('dashboard') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
                             <span class="mr-3">
@@ -71,6 +73,7 @@
                             課金管理
                         </a>
                     </li>
+                    @endcan
                     <li>
                         <a href="{{ route('farm-management.index') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('farm-management.index') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
                             <span class="mr-3">
@@ -81,6 +84,7 @@
                             圃場管理
                         </a>
                     </li>
+                    @can('admin')
                     <li>
                         <a href="{{ route('upload-management.index') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('upload-management.index') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
                             <span class="mr-3">
@@ -91,6 +95,7 @@
                             アップロード管理
                         </a>
                     </li>
+                    @endcan
                     <li>
                         <a href="{{ route('estimation-results.index') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('estimation-results.index') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
                             <span class="mr-3">
@@ -101,7 +106,17 @@
                             推定結果閲覧
                         </a>
                     </li>
-                    
+                    <li>
+                        <a href="{{ route('profile.edit') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('profile.edit') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
+                            <span class="mr-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </span>
+                            設定
+                        </a>
+                    </li>
                 </ul>
             </nav>
         </aside>

@@ -16,6 +16,7 @@ use App\Support\SoilParameterUnits;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class ManualResultController extends Controller
 {
@@ -33,7 +34,7 @@ class ManualResultController extends Controller
 
         $farm = Farm::findOrFail($request->integer('farm_id'));
 
-        if ((int) $farm->app_user_id !== (int) $user->id) {
+        if (Gate::forUser($user)->denies('own', $farm)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -103,7 +104,7 @@ class ManualResultController extends Controller
 
         $upload->load(['farm', 'analysisResult']);
 
-        if ((int) $upload->farm->app_user_id !== (int) $user->id) {
+        if (Gate::forUser($user)->denies('own', $upload)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -166,7 +167,7 @@ class ManualResultController extends Controller
 
         $upload->load('farm');
 
-        if ((int) $upload->farm->app_user_id !== (int) $user->id) {
+        if (Gate::forUser($user)->denies('own', $upload)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 

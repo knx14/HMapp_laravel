@@ -10,6 +10,7 @@ use App\Services\Results\FarmTimelineService;
 use App\Services\Results\ResultsAggregationService;
 use App\Services\Results\ResultsTimeseriesService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class ResultsApiController extends Controller
 {
@@ -28,7 +29,7 @@ class ResultsApiController extends Controller
 
         $farms = Farm::query()
             ->visible()
-            ->where('app_user_id', $user->id)
+            ->ownedBy($user)
             ->get(['id', 'farm_name']);
 
         if ($farms->isEmpty()) {
@@ -83,7 +84,7 @@ class ResultsApiController extends Controller
 
         $farms = Farm::query()
             ->visible()
-            ->where('app_user_id', $user->id)
+            ->ownedBy($user)
             ->orderBy('id')
             ->get(['id', 'farm_name', 'boundary_polygon']);
 
@@ -289,7 +290,7 @@ class ResultsApiController extends Controller
         if (! $farm) {
             abort(404);
         }
-        if ((int) $farm->app_user_id !== (int) $user->id) {
+        if (Gate::forUser($user)->denies('own', $farm)) {
             abort(403);
         }
         if ($farm->hidden_at !== null) {

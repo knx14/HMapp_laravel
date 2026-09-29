@@ -29,6 +29,10 @@
                         <input type="text" name="ja_name" value="{{ $filters['ja_name'] ?? '' }}" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="登録JA名 を入力">
                     </div>
                 </div>
+                <label class="inline-flex items-center gap-2">
+                    <input type="checkbox" name="role" value="admin" @checked(($filters['role'] ?? '') === 'admin') class="rounded border-gray-300">
+                    <span class="font-semibold">管理者のみ</span>
+                </label>
                 <div class="flex flex-row gap-4 mt-6">
                     <button type="submit" class="flex items-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded transition text-lg">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
@@ -63,6 +67,8 @@
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">名前</th>
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">メールアドレス</th>
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">JA名</th>
+                                <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">権限</th>
+                                <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">管理者になった日時</th>
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">作成日</th>
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">更新日</th>
                             </tr>
@@ -77,6 +83,14 @@
                                     </td>
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $user->email ?? '-' }}</td>
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $user->ja_name ?? '-' }}</td>
+                                    <td class="px-8 py-4 text-sm">
+                                        @if($user->isAdmin())
+                                            <span class="inline-block px-2 py-1 rounded bg-purple-100 text-purple-800 font-semibold">管理者</span>
+                                        @else
+                                            <span class="text-gray-700">一般</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-8 py-4 text-sm text-gray-900">{{ $user->admin_granted_at ? $user->admin_granted_at->format('Y-m-d H:i') : '-' }}</td>
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $user->created_at ? $user->created_at->format('Y-m-d H:i') : '-' }}</td>
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $user->updated_at ? $user->updated_at->format('Y-m-d H:i') : '-' }}</td>
                                 </tr>

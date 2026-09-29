@@ -41,7 +41,30 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Web ログインで受け取る ID トークンの検証を、指定した sub を返すだけのものに差し替える。
+ */
+function fakeWebIdTokenVerifier(string $sub): void
 {
-    // ..
+    app()->instance(\App\Services\Cognito\JwtVerifier::class, new class($sub) extends \App\Services\Cognito\JwtVerifier
+    {
+        public function __construct(private string $sub) {}
+
+        public function verifyToken(string $jwt): array
+        {
+            return [
+                'claims' => [
+                    'sub' => $this->sub,
+                    'token_use' => 'id',
+                    'cognito:username' => $this->sub,
+                ],
+                'header' => [],
+            ];
+        }
+    });
+}
+
+function fakeCognitoTokens(?string $refreshToken = 'refresh-token', int $expiresIn = 3600): \App\Services\Cognito\CognitoTokens
+{
+    return new \App\Services\Cognito\CognitoTokens('id-token', 'access-token', $refreshToken, $expiresIn);
 }

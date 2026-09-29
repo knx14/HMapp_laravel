@@ -9,6 +9,7 @@ use App\Http\Resources\Api\V1\FarmResource;
 use App\Models\Farm;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 
 class FarmController extends Controller
@@ -21,7 +22,7 @@ class FarmController extends Controller
         $user = $request->attributes->get('auth_user');
 
         $farms = Farm::visible()
-            ->where('app_user_id', $user->id)
+            ->ownedBy($user)
             ->latest()
             ->get();
 
@@ -57,7 +58,7 @@ class FarmController extends Controller
     {
         $user = $request->attributes->get('auth_user');
 
-        if ($farm->app_user_id !== $user->id) {
+        if (Gate::forUser($user)->denies('update', $farm)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -79,7 +80,7 @@ class FarmController extends Controller
     {
         $user = $request->attributes->get('auth_user');
 
-        if ($farm->app_user_id !== $user->id) {
+        if (Gate::forUser($user)->denies('delete', $farm)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
