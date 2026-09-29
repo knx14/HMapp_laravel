@@ -72,6 +72,7 @@
                         <h2 class="text-xl font-semibold text-gray-800">圃場一覧</h2>
                         <p class="text-gray-600 mt-1">全{{ $farms->total() }}件中 {{ $farms->firstItem() ?? 0 }}-{{ $farms->lastItem() ?? 0 }}件を表示</p>
                     </div>
+                    @can('admin')
                     <a href="{{ route('farm-management.create') }}" 
                        class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -79,6 +80,7 @@
                         </svg>
                         圃場を追加
                     </a>
+                    @endcan
                 </div>
             </div>
 

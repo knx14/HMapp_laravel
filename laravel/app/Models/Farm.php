@@ -35,6 +35,26 @@ class Farm extends Model
     }
 
     /**
+     * 指定ユーザーが所有する圃場に限定する。
+     */
+    public function scopeOwnedBy(Builder $query, AppUser $user): Builder
+    {
+        return $query->where('app_user_id', $user->id);
+    }
+
+    /**
+     * Web 画面で閲覧できる圃場に限定する（FarmPolicy::view と同じ範囲）。
+     */
+    public function scopeAccessibleBy(Builder $query, AppUser $user): Builder
+    {
+        if ($user->isAdmin()) {
+            return $query;
+        }
+
+        return $query->ownedBy($user)->visible();
+    }
+
+    /**
      * 農場を所有するアプリユーザーとのリレーション
      */
     public function appUser(): BelongsTo

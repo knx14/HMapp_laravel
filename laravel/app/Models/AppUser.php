@@ -11,6 +11,9 @@ class AppUser extends Authenticatable
 {
 	use HasFactory, Notifiable;
 
+	public const ROLE_USER = 'user';
+	public const ROLE_ADMIN = 'admin';
+
 	protected $table = 'app_users';
 
 	protected $fillable = [
@@ -23,6 +26,27 @@ class AppUser extends Authenticatable
 	protected $hidden = [
 	];
 
+	protected $attributes = [
+		'role' => self::ROLE_USER,
+	];
+
+	protected $casts = [
+		'admin_granted_at' => 'datetime',
+	];
+
+	/**
+	 * Cognito で認証するため、Laravel 側には remember token を持たない。
+	 */
+	public function getRememberTokenName()
+	{
+		return '';
+	}
+
+	public function isAdmin(): bool
+	{
+		return $this->role === self::ROLE_ADMIN;
+	}
+
 	/**
 	 * アプリユーザーが所有する農場とのリレーション
 	 */
@@ -30,6 +54,12 @@ class AppUser extends Authenticatable
 	{
 		return $this->hasMany(Farm::class);
 	}
+
+	/**
+	 * 管理者権限の変更履歴
+	 */
+	public function adminRoleEvents(): HasMany
+	{
+		return $this->hasMany(AdminRoleEvent::class)->latest('created_at')->latest('id');
+	}
 }
-
-

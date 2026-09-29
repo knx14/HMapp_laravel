@@ -9,6 +9,7 @@ use App\Models\Upload;
 use App\Support\SoilParameterUnits;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,7 @@ class EstimationResultsController extends Controller
     {
         $input = $request->only(['cultivation_method', 'crop_type']);
 
-        $query = Farm::with('appUser');
+        $query = Farm::with('appUser')->accessibleBy($request->user());
 
         if (!empty($input['cultivation_method'])) {
             $query->where('cultivation_method', 'like', '%' . $input['cultivation_method'] . '%');
@@ -39,6 +40,7 @@ class EstimationResultsController extends Controller
     public function farmDates(int $farmId)
     {
         $farm = Farm::findOrFail($farmId);
+        Gate::authorize('view', $farm);
 
         // completedのものだけを取得（同一 measurement_date を1件に集約）
         $groupedDates = Upload::query()
@@ -74,6 +76,7 @@ class EstimationResultsController extends Controller
     public function cecMap(int $farmId, int $uploadId)
     {
         $farm = Farm::findOrFail($farmId);
+        Gate::authorize('view', $farm);
         $upload = Upload::where('id', $uploadId)->where('farm_id', $farm->id)->firstOrFail();
 
         // 選択した日付と同じ日付のアップロードIDを取得（同じ日に複数点取得したデータをまとめて表示）

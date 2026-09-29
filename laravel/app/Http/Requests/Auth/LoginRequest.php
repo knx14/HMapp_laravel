@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Services\Cognito\CognitoAuthException;
+use App\Services\Cognito\CognitoAuthResult;
+use App\Services\Cognito\CognitoAuthService;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -32,24 +34,46 @@ class LoginRequest extends FormRequest
         ];
     }
 
+    public function attributes(): array
+    {
+        return [
+            'email' => 'メールアドレス',
+            'password' => 'パスワード',
+        ];
+    }
+
     /**
-     * Attempt to authenticate the request's credentials.
+     * Cognito で認証する。パスワード誤りはレート制限の対象として数える。
      *
      * @throws \Illuminate\Validation\ValidationException
+     * @throws CognitoAuthException パスワードの再設定が必要なときなど、画面遷移で扱うもの
      */
-    public function authenticate(): void
+    public function authenticate(CognitoAuthService $cognito): CognitoAuthResult
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+        try {
+            $result = $cognito->authenticate($this->email(), (string) $this->input('password'));
+        } catch (CognitoAuthException $e) {
+            if ($e->isInvalidCredentials()) {
+                RateLimiter::hit($this->throttleKey());
 
-            throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
-            ]);
+                throw ValidationException::withMessages([
+                    'email' => 'メールアドレスまたはパスワードが違います。',
+                ]);
+            }
+
+            throw $e;
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        return $result;
+    }
+
+    public function email(): string
+    {
+        return Str::lower(trim((string) $this->input('email')));
     }
 
     /**
@@ -68,10 +92,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'email' => 'ログインの試行回数が多すぎます。'.(int) ceil($seconds / 60).'分後に再度お試しください。',
         ]);
     }
 
@@ -80,6 +101,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate($this->email().'|'.$this->ip());
     }
 }

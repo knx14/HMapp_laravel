@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\AppUser;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class AppUserFactory extends Factory
@@ -14,5 +15,13 @@ class AppUserFactory extends Factory
             'email' => $this->faker->unique()->safeEmail(),
             'ja_name' => $this->faker->name(),
         ];
+    }
+
+    public function admin(): static
+    {
+        return $this->state(fn () => [
+            'role' => AppUser::ROLE_ADMIN,
+            'admin_granted_at' => now(),
+        ]);
     }
 }

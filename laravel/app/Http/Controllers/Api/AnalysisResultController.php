@@ -8,6 +8,7 @@ use App\Models\AppUser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class AnalysisResultController extends Controller
 {
@@ -64,8 +65,7 @@ class AnalysisResultController extends Controller
         $analysisResult->loadMissing('upload.farm');
 
         return $analysisResult->upload !== null
-            && $analysisResult->upload->farm !== null
-            && (int) $analysisResult->upload->farm->app_user_id === (int) $user->id;
+            && Gate::forUser($user)->allows('own', $analysisResult->upload);
     }
 
     private function authUser(Request $request): AppUser

@@ -1,11 +1,11 @@
 <?php
 
 use App\Models\Farm;
-use App\Models\User;
+use App\Models\AppUser;
 use Illuminate\Support\Facades\DB;
 
 test('cec map points json includes measurement_number', function () {
-    $user = User::factory()->create();
+    $user = AppUser::factory()->admin()->create();
     $farm = Farm::factory()->create();
 
     $uploadId = DB::table('uploads')->insertGetId([
@@ -34,7 +34,7 @@ test('cec map points json includes measurement_number', function () {
 });
 
 test('cec map does not invent a number for manual points', function () {
-    $user = User::factory()->create();
+    $user = AppUser::factory()->admin()->create();
     $farm = Farm::factory()->create();
 
     $uploadId = DB::table('uploads')->insertGetId([

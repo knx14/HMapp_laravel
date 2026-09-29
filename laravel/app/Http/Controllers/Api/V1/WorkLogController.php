@@ -9,6 +9,7 @@ use App\Models\Farm;
 use App\Models\WorkLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class WorkLogController extends Controller
 {
@@ -60,7 +61,7 @@ class WorkLogController extends Controller
     {
         $user = $request->attributes->get('auth_user');
 
-        return $user !== null && $farm->app_user_id === $user->id;
+        return $user !== null && Gate::forUser($user)->allows('own', $farm);
     }
 
     private function ownsWorkLog(Request $request, WorkLog $workLog): bool

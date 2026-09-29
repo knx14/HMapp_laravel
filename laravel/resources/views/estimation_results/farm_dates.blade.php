@@ -28,6 +28,7 @@
             @endif
         </div>
 
+        @can('admin')
         <div class="bg-white rounded-2xl shadow p-6">
             <h3 class="text-lg font-semibold mb-4">結果入力</h3>
             
@@ -75,6 +76,7 @@
                 @endif
             @endif
         </div>
+        @endcan
     </div>
 </div>
 @endsection

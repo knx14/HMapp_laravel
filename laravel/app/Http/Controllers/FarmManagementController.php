@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Farm;
 use App\Models\AppUser;
-use App\Models\AnalysisResult;
-use App\Models\ResultValue;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 
@@ -16,7 +14,7 @@ class FarmManagementController extends Controller
     {
         $input = $request->only(['cultivation_method', 'crop_type']);
 
-        $query = Farm::with('appUser');
+        $query = Farm::with('appUser')->accessibleBy($request->user());
 
         // 栽培方法で検索
         if (!empty($input['cultivation_method'])) {
@@ -139,7 +137,7 @@ class FarmManagementController extends Controller
      * @param int $farmId
      * @return JsonResponse
      */
-    public function getBoundary(int $farmId): JsonResponse
+    public function getBoundary(Request $request, int $farmId): JsonResponse
     {
         $farm = Farm::find($farmId);
 
@@ -147,18 +145,18 @@ class FarmManagementController extends Controller
             return response()->json([
                 'error' => '指定された圃場が見つかりません。',
                 'message' => 'Farm not found'
-            ], 404)->header('Access-Control-Allow-Origin', '*')
-                   ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                   ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+            ], 404);
+        }
+
+        if ($request->user()->cannot('view', $farm)) {
+            return response()->json(['message' => 'Forbidden'], 403);
         }
 
         if (!$farm->boundary_polygon) {
             return response()->json([
                 'error' => 'この圃場には境界線データが設定されていません。',
                 'message' => 'No boundary data available'
-            ], 404)->header('Access-Control-Allow-Origin', '*')
-                   ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                   ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+            ], 404);
         }
 
         return response()->json([
@@ -168,71 +166,7 @@ class FarmManagementController extends Controller
                 'farm_name' => $farm->farm_name,
                 'boundary_polygon' => $farm->boundary_polygon
             ]
-        ])->header('Access-Control-Allow-Origin', '*')
-          ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-          ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    }
-
-    /**
-     * 指定された圃場内の測定データを取得する
-     * データベースのリレーションシップを使用して直接取得
-     *
-     * @param int $farmId
-     * @return JsonResponse
-     */
-    public function getFarmMeasurements(int $farmId): JsonResponse
-    {
-        $farm = Farm::find($farmId);
-
-        if (!$farm) {
-            return response()->json([
-                'error' => '指定された圃場が見つかりません。',
-                'message' => 'Farm not found'
-            ], 404)->header('Access-Control-Allow-Origin', '*')
-                   ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                   ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        }
-
-        // データベースのリレーションシップを使用して圃場に関連する測定データを取得
-        // AnalysisResult → Upload → Farm のリレーションを利用
-        $analysisResults = AnalysisResult::with('resultValues')
-            ->whereHas('upload', function ($query) use ($farmId) {
-                $query->where('farm_id', $farmId);
-            })
-            ->get();
-
-        $measurements = [];
-
-        foreach ($analysisResults as $result) {
-            $measurementData = [
-                'id' => $result->id,
-                'latitude' => $result->latitude,
-                'longitude' => $result->longitude,
-                'sensor_info' => $result->sensor_info,
-                'values' => []
-            ];
-
-            // 各測定値を取得
-            foreach ($result->resultValues as $value) {
-                $measurementData['values'][$value->parameter_name] = [
-                    'value' => $value->parameter_value,
-                    'unit' => $value->unit ?? null
-                ];
-            }
-
-            $measurements[] = $measurementData;
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'farm_id' => $farm->id,
-                'farm_name' => $farm->farm_name,
-                'measurements' => $measurements
-            ]
-        ])->header('Access-Control-Allow-Origin', '*')
-          ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-          ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        ]);
     }
 
     /**
