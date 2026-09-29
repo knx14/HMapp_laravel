@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\FarmManagementController;
 use App\Http\Controllers\EstimationResultsController;
+use App\Http\Controllers\MeasurementController;
 use App\Http\Controllers\UploadManagementController;
 
 Route::get('/', function () {
@@ -23,6 +24,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/admin-key', [ProfileController::class, 'grantAdmin'])->name('profile.admin-key');
 
     Route::get('/farms', [FarmManagementController::class, 'index'])->name('farm-management.index');
+
+    // 測定データ閲覧
+    Route::get('/measurements', [MeasurementController::class, 'index'])->name('measurements.index');
+    Route::post('/measurements/export', [MeasurementController::class, 'export'])->name('measurements.export');
 
     // 推定結果閲覧
     Route::get('/estimation-results', [EstimationResultsController::class, 'index'])->name('estimation-results.index');

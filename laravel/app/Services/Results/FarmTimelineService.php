@@ -34,6 +34,7 @@ class FarmTimelineService
             INNER JOIN analysis_results ar ON ar.upload_id = u.id
             WHERE u.farm_id = ?
               AND u.status = ?
+              AND u.deleted_at IS NULL
               AND u.measurement_date IS NOT NULL
             GROUP BY u.measurement_date, measurement_source
         ", [$farmId, Upload::STATUS_COMPLETED]);
@@ -64,6 +65,7 @@ class FarmTimelineService
             INNER JOIN result_values rv ON rv.analysis_result_id = ar.id
             WHERE u.farm_id = ?
               AND u.status = ?
+              AND u.deleted_at IS NULL
               AND u.measurement_date IS NOT NULL
               AND rv.parameter_name IN ({$placeholders})
             GROUP BY u.measurement_date, measurement_source, rv.parameter_name
