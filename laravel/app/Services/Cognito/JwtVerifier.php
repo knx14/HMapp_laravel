@@ -37,7 +37,7 @@ class JwtVerifier
 
         // 追加のclaims検証
         $issuer = config('cognito.issuer');
-        $clientId = config('cognito.client_id');
+        $clientIds = (array) config('cognito.client_ids', []);
         $tokenUse = $claims['token_use'] ?? null;
 
         if (($claims['iss'] ?? null) !== $issuer) {
@@ -51,14 +51,14 @@ class JwtVerifier
 
         // id_tokenの場合: audを検証
         if ($tokenUse === 'id') {
-            if (($claims['aud'] ?? null) !== $clientId) {
+            if (! in_array($claims['aud'] ?? null, $clientIds, true)) {
                 throw new \RuntimeException('Invalid audience for id_token');
             }
         }
 
         // access_tokenの場合: client_idを検証（audの代わり）
         if ($tokenUse === 'access') {
-            if (($claims['client_id'] ?? null) !== $clientId) {
+            if (! in_array($claims['client_id'] ?? null, $clientIds, true)) {
                 throw new \RuntimeException('Invalid client_id for access_token');
             }
         }

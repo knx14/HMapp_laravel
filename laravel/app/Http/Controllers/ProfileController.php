@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\Admin\AdminRoleService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile form.
+     * 設定画面
      */
     public function edit(Request $request): View
     {
@@ -22,39 +22,43 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the user's profile information.
+     * 管理者キーを照合し、一致すれば管理者権限を付与する。
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function grantAdmin(Request $request, AdminRoleService $adminRoles): RedirectResponse
     {
-        $request->user()->fill($request->validated());
-
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $user = $request->user();
+        if ($user->isAdmin()) {
+            return redirect()->route('profile.edit');
         }
 
-        $request->user()->save();
+        $request->validate(['admin_key' => ['required', 'string', 'max:255']], [], ['admin_key' => '管理者キー']);
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
-    }
+        $throttle = config('admin.grant_throttle');
+        $userKey = 'admin-grant:user:'.$user->id;
+        $ipKey = 'admin-grant:ip:'.$request->ip();
 
-    /**
-     * Delete the user's account.
-     */
-    public function destroy(Request $request): RedirectResponse
-    {
-        $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current_password'],
-        ]);
+        if (RateLimiter::tooManyAttempts($userKey, $throttle['per_user'])
+            || RateLimiter::tooManyAttempts($ipKey, $throttle['per_ip'])) {
+            throw ValidationException::withMessages(['admin_key' => 'しばらくしてから再度お試しください。']);
+        }
 
-        $user = $request->user();
+        $context = ['ip_address' => $request->ip(), 'user_agent' => $request->userAgent()];
 
-        Auth::logout();
+        if (! $adminRoles->isGrantKeyConfigured()) {
+            throw ValidationException::withMessages(['admin_key' => '管理者キーが設定されていません。管理者にお問い合わせください。']);
+        }
 
-        $user->delete();
+        if (! $adminRoles->grantKeyMatches((string) $request->input('admin_key'))) {
+            RateLimiter::hit($userKey, $throttle['decay_seconds']);
+            RateLimiter::hit($ipKey, $throttle['decay_seconds']);
+            $adminRoles->recordGrantFailure($user, $context);
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+            throw ValidationException::withMessages(['admin_key' => '管理者キーが違います。']);
+        }
 
-        return Redirect::to('/');
+        RateLimiter::clear($userKey);
+        $adminRoles->grant($user, $context);
+
+        return redirect()->route('profile.edit')->with('status', '管理者権限を有効にしました。');
     }
 }

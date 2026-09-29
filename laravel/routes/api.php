@@ -2,8 +2,6 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\FarmController;
-use App\Http\Controllers\FarmManagementController;
 use App\Http\Controllers\Api\ResultsApiController;
 use App\Http\Controllers\Api\ManualResultController;
 
@@ -40,12 +38,3 @@ Route::middleware(['cognito.jwt'])->group(function () {
     Route::put('/manual-results/{upload}', [ManualResultController::class, 'update']);
     Route::delete('/manual-results/{upload}', [ManualResultController::class, 'destroy']);
 });
-
-// 分析サマリー一覧API
-Route::get('/analysis/summary', [FarmController::class, 'analysisSummary']);
-
-// 詳細分析データAPI
-Route::get('/uploads/{uploadId}/analysis-data', [FarmController::class, 'analysisData']);
-
-// 圃場の境界線データを取得するAPIエンドポイント（認証不要）
-Route::get('/farms/{farmId}/boundary', [FarmManagementController::class, 'getBoundary'])->middleware('web');

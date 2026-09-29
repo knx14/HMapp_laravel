@@ -14,7 +14,20 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'cognito.jwt' => \App\Http\Middleware\CognitoJwtMiddleware::class,
+            'admin' => \App\Http\Middleware\EnsureAdmin::class,
         ]);
+
+        $middleware->web(append: [
+            \App\Http\Middleware\RefreshCognitoSession::class,
+        ]);
+
+        $middleware->redirectUsersTo(function (\Illuminate\Http\Request $request) {
+            $user = $request->user();
+
+            return $user instanceof \App\Models\AppUser
+                ? \App\Http\Controllers\Auth\AuthenticatedSessionController::homeUrl($user)
+                : '/';
+        });
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
