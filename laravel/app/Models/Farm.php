@@ -72,10 +72,11 @@ class Farm extends Model
 
     /**
      * 圃場に測定データが存在するか判定する。
+     * 論理削除した測定も数える。圃場を物理削除すると外部キーのカスケードで測定も消えるため。
      */
     public function hasMeasurementData(): bool
     {
-        return $this->uploads()->exists();
+        return $this->uploads()->withTrashed()->exists();
     }
 
     /**

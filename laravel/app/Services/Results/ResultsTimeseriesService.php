@@ -35,6 +35,7 @@ class ResultsTimeseriesService
                 AND rv.parameter_name = ?
             WHERE u.farm_id = ?
               AND u.status = ?
+              AND u.deleted_at IS NULL
               AND u.measurement_date IS NOT NULL
             GROUP BY u.measurement_date
             HAVING COUNT(rv.id) > 0

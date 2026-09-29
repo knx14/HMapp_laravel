@@ -7,7 +7,6 @@ use App\Models\AnalysisResult;
 use App\Models\AppUser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class AnalysisResultController extends Controller
@@ -18,6 +17,8 @@ class AnalysisResultController extends Controller
      */
     public function updateLocation(Request $request, AnalysisResult $analysisResult): JsonResponse
     {
+        $this->ensureUploadNotDeleted($analysisResult);
+
         if (!$this->ownsAnalysisResult($request, $analysisResult)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
@@ -40,22 +41,31 @@ class AnalysisResultController extends Controller
 
     /**
      * DELETE /api/v1/results/{analysisResult}
-     * 測定そのもの（upload）と、その推定結果を削除する。
+     * 測定そのもの（upload）を論理削除する。推定結果と S3 の生データは残す。
      */
     public function destroy(Request $request, AnalysisResult $analysisResult): JsonResponse
     {
+        $this->ensureUploadNotDeleted($analysisResult);
+
         if (!$this->ownsAnalysisResult($request, $analysisResult)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        DB::transaction(function () use ($analysisResult): void {
-            $upload = $analysisResult->upload()->first();
-            $analysisResult->resultValues()->delete();
-            $analysisResult->delete();
-            $upload?->delete();
-        });
+        $analysisResult->upload->delete();
 
         return response()->json(['message' => 'deleted']);
+    }
+
+    /**
+     * 論理削除した測定の推定結果は存在しないものとして扱う。
+     */
+    private function ensureUploadNotDeleted(AnalysisResult $analysisResult): void
+    {
+        $upload = $analysisResult->upload()->withTrashed()->first();
+
+        if ($upload !== null && $upload->trashed()) {
+            abort(response()->json(['message' => 'Not Found'], 404));
+        }
     }
 
     private function ownsAnalysisResult(Request $request, AnalysisResult $analysisResult): bool

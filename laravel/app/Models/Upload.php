@@ -6,9 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * 測定は物理削除しない。analysis_results / result_values / S3 の生データは削除後も残す。
+ */
 class Upload extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'farm_id',
         'file_path',
@@ -48,4 +54,8 @@ class Upload extends Model
         return $this->hasOne(AnalysisResult::class);
     }
 
+    public function isManualEntry(): bool
+    {
+        return ($this->measurement_parameters['manual_entry'] ?? false) === true;
+    }
 }
