@@ -2,140 +2,157 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Farm;
+use App\Http\Requests\SaveFarmRequest;
 use App\Models\AppUser;
+use App\Models\Farm;
+use App\Services\Farms\FarmDeleter;
+use App\Services\Results\ResultsAggregationService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 
 class FarmManagementController extends Controller
 {
+    /** 並べ替えの選択肢。user_name は管理者のみ */
+    public const SORTS = [
+        'created_desc' => '登録日が新しい順',
+        'created_asc' => '登録日が古い順',
+        'farm_name' => '圃場名順',
+        'user_name' => 'ユーザー名順',
+    ];
+
+    public function __construct(
+        private FarmDeleter $deleter,
+        private ResultsAggregationService $results,
+    ) {}
+
     public function index(Request $request)
     {
-        $input = $request->only(['cultivation_method', 'crop_type']);
-
-        $query = Farm::with('appUser')->accessibleBy($request->user());
-
-        // 栽培方法で検索
-        if (!empty($input['cultivation_method'])) {
-            $query->where('cultivation_method', 'like', '%' . $input['cultivation_method'] . '%');
+        $user = $request->user();
+        $isAdmin = $user->isAdmin();
+        $input = array_map(
+            fn ($value) => is_string($value) ? trim($value) : null,
+            $request->only(['farm_name', 'cultivation_method', 'crop_type', 'user_name', 'sort']),
+        );
+        $sort = array_key_exists($input['sort'] ?? '', self::SORTS) ? $input['sort'] : 'created_desc';
+        if ($sort === 'user_name' && !$isAdmin) {
+            $sort = 'created_desc';
         }
 
-        // 作物種別で検索
-        if (!empty($input['crop_type'])) {
-            $query->where('crop_type', 'like', '%' . $input['crop_type'] . '%');
+        $query = Farm::query()
+            ->with('appUser')
+            ->accessibleBy($user)
+            ->leftJoin('app_users', 'app_users.id', '=', 'farms.app_user_id')
+            ->select('farms.*');
+
+        foreach (['farm_name' => 'farms.farm_name', 'cultivation_method' => 'farms.cultivation_method', 'crop_type' => 'farms.crop_type'] as $key => $column) {
+            $this->whereLike($query, $column, $input[$key] ?? null);
+        }
+        if ($isAdmin) {
+            $this->whereLike($query, 'app_users.name', $input['user_name'] ?? null);
         }
 
-        $farms = $query->orderBy('id')->paginate(10);
+        match ($sort) {
+            'created_asc' => $query->orderBy('farms.created_at'),
+            'farm_name' => $query->orderBy('farms.farm_name'),
+            'user_name' => $query->orderBy('app_users.name')->orderBy('farms.farm_name'),
+            default => $query->orderByDesc('farms.created_at'),
+        };
+        $query->orderBy('farms.id');
+
+        $farms = $query->paginate(12)->appends(array_filter($input + ['sort' => $sort]));
 
         return view('farm_management.index', [
             'farms' => $farms,
             'input' => $input,
+            'sort' => $sort,
+            'sorts' => $isAdmin ? self::SORTS : array_diff_key(self::SORTS, ['user_name' => true]),
+            'isAdmin' => $isAdmin,
         ]);
     }
 
-    /**
-     * 圃場登録フォームを表示
-     */
-    public function create()
+    public function create(Request $request)
     {
-        return view('farm_management.create');
+        return view('farm_management.form', [
+            'farm' => null,
+            'boundary' => [],
+            'owners' => $this->owners($request->user()),
+        ]);
     }
 
-    /**
-     * 圃場を登録
-     */
-    public function store(Request $request)
+    public function store(SaveFarmRequest $request): RedirectResponse
     {
-        // バリデーションルール
-        $rules = [
-            'owner_name' => 'required|string|max:255',
-            'farm_name' => 'required|string|max:255',
-            'cultivation_method' => 'nullable|string|max:255',
-            'crop_type' => 'nullable|string|max:255',
-        ];
+        $user = $request->user();
 
-        // GPS座標のバリデーションルールを追加
-        for ($i = 1; $i <= 4; $i++) {
-            $rules["gps_lat_{$i}"] = 'required|numeric|between:-90,90';
-            $rules["gps_lng_{$i}"] = 'required|numeric|between:-180,180';
-        }
+        $farm = Farm::create([
+            'app_user_id' => $user->isAdmin() ? (int) $request->validated('app_user_id') : $user->id,
+            'farm_name' => $request->validated('farm_name'),
+            'cultivation_method' => $request->validated('cultivation_method'),
+            'crop_type' => $request->validated('crop_type'),
+            'boundary_polygon' => $request->boundary(),
+        ]);
 
-        // オプションのGPS座標（5-8点目）
-        for ($i = 5; $i <= 8; $i++) {
-            $rules["gps_lat_{$i}"] = 'nullable|numeric|between:-90,90';
-            $rules["gps_lng_{$i}"] = 'nullable|numeric|between:-180,180';
-        }
-
-        $validator = Validator::make($request->all(), $rules);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        // 保有者名からapp_user_idを取得
-        $appUser = AppUser::where('name', $request->owner_name)->first();
-        
-        if (!$appUser) {
-            return redirect()->back()
-                ->withErrors(['owner_name' => '指定された保有者名が見つかりません。'])
-                ->withInput();
-        }
-
-        // GPS座標を収集
-        $gpsCoordinates = [];
-        for ($i = 1; $i <= 8; $i++) {
-            $lat = $request->input("gps_lat_{$i}");
-            $lng = $request->input("gps_lng_{$i}");
-            
-            if ($lat && $lng) {
-                $gpsCoordinates[] = [(float)$lat, (float)$lng];
-            }
-        }
-
-        // 最低4点のGPS座標が必要
-        if (count($gpsCoordinates) < 4) {
-            return redirect()->back()
-                ->withErrors(['gps_coordinates' => '最低4点のGPS座標が必要です。'])
-                ->withInput();
-        }
-
-        // GPS座標を時計回りにソート
-        $gpsCoordinates = $this->sortCoordinatesClockwise($gpsCoordinates);
-
-        // 圃場データを作成
-        $farmData = [
-            'app_user_id' => $appUser->id,
-            'farm_name' => $request->farm_name,
-            'cultivation_method' => $request->cultivation_method,
-            'crop_type' => $request->crop_type,
-            'boundary_polygon' => [
-                'boundary_polygon' => $gpsCoordinates
-            ]
-        ];
-
-        try {
-            Farm::create($farmData);
-            
-            return redirect()->route('farm-management.index')
-                ->with('success', '圃場が正常に登録されました。');
-                
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->withErrors(['error' => '圃場の登録中にエラーが発生しました。'])
-                ->withInput();
-        }
+        return redirect()->route('farm-management.index')
+            ->with('success', $farm->isProvisional()
+                ? "「{$farm->farm_name}」を仮登録しました（境界なし）。"
+                : "「{$farm->farm_name}」を登録しました。");
     }
 
+    public function edit(Request $request, Farm $farm)
+    {
+        Gate::authorize('manage', $farm);
 
+        return view('farm_management.form', [
+            'farm' => $farm->load('appUser'),
+            'boundary' => $this->results->normalizeBoundaryPolygon($farm->boundary_polygon),
+            'owners' => $this->owners($request->user()),
+        ]);
+    }
+
+    public function update(SaveFarmRequest $request, Farm $farm): RedirectResponse
+    {
+        Gate::authorize('manage', $farm);
+
+        $farm->fill([
+            'farm_name' => $request->validated('farm_name'),
+            'cultivation_method' => $request->validated('cultivation_method'),
+            'crop_type' => $request->validated('crop_type'),
+            'boundary_polygon' => $request->boundary(),
+        ]);
+
+        $newOwnerId = $request->validated('app_user_id');
+        if ($newOwnerId !== null && (int) $newOwnerId !== (int) $farm->app_user_id && $request->user()->can('changeOwner', $farm)) {
+            Log::info('farm owner changed', [
+                'farm_id' => $farm->id,
+                'from_app_user_id' => $farm->app_user_id,
+                'to_app_user_id' => (int) $newOwnerId,
+                'by_app_user_id' => $request->user()->id,
+            ]);
+            $farm->app_user_id = (int) $newOwnerId;
+        }
+
+        $farm->save();
+
+        return redirect()->route('farm-management.index')
+            ->with('success', "「{$farm->farm_name}」を更新しました。");
+    }
+
+    public function destroy(Farm $farm): RedirectResponse
+    {
+        Gate::authorize('manage', $farm);
+
+        $message = $this->deleter->delete($farm) === FarmDeleter::HIDDEN
+            ? "「{$farm->farm_name}」を削除しました（測定・作業記録があるため、データは残して非表示にしました）。"
+            : "「{$farm->farm_name}」を削除しました。";
+
+        return redirect()->route('farm-management.index')->with('success', $message);
+    }
 
     /**
      * 指定された圃場の境界線データを取得する
-     *
-     * @param int $farmId
-     * @return JsonResponse
      */
     public function getBoundary(Request $request, int $farmId): JsonResponse
     {
@@ -170,52 +187,25 @@ class FarmManagementController extends Controller
     }
 
     /**
-     * GPS座標を時計回りにソートする
-     * 中心点からの角度を計算してソートすることで、登録順に関わらず
-     * 正しい順序でポリゴンが描画されるようにする
-     * 
-     * @param array $coordinates [[lat, lng], ...] の形式
-     * @return array ソート済み座標配列
+     * 管理者が所有者を選ぶための候補。一般ユーザーには出さない。
+     *
+     * @return Collection<int, AppUser>
      */
-    private function sortCoordinatesClockwise(array $coordinates): array
+    private function owners(AppUser $user): Collection
     {
-        if (count($coordinates) < 3) {
-            return $coordinates;
+        if (!$user->isAdmin()) {
+            return collect();
         }
 
-        // 1. 中心点を計算（全ての点の平均）
-        $sumLat = 0;
-        $sumLng = 0;
-        foreach ($coordinates as $coord) {
-            $sumLat += $coord[0];  // lat
-            $sumLng += $coord[1];  // lng
+        return AppUser::query()->orderBy('name')->get(['id', 'name', 'email', 'organization']);
+    }
+
+    private function whereLike($query, string $column, ?string $value): void
+    {
+        if ($value === null || $value === '') {
+            return;
         }
-        $centerLat = $sumLat / count($coordinates);
-        $centerLng = $sumLng / count($coordinates);
 
-        // 2. 各点を中心からの角度でソート（時計回り = 降順）
-        usort($coordinates, function ($a, $b) use ($centerLat, $centerLng) {
-            // 点aの角度を計算
-            $deltaLatA = $a[0] - $centerLat;
-            $deltaLngA = $a[1] - $centerLng;
-            $angleA = atan2($deltaLatA, $deltaLngA);
-            
-            // 点bの角度を計算
-            $deltaLatB = $b[0] - $centerLat;
-            $deltaLngB = $b[1] - $centerLng;
-            $angleB = atan2($deltaLatB, $deltaLngB);
-            
-            // 角度が同じ場合（一直線上の点）は距離でソート（近い順）
-            if (abs($angleA - $angleB) < 0.0001) {
-                $distanceA = sqrt($deltaLatA * $deltaLatA + $deltaLngA * $deltaLngA);
-                $distanceB = sqrt($deltaLatB * $deltaLatB + $deltaLngB * $deltaLngB);
-                return $distanceB <=> $distanceA;  // 距離の降順（外側の点を先に）
-            }
-            
-            // 降順でソート（時計回り）
-            return $angleB <=> $angleA;
-        });
-
-        return $coordinates;
+        $query->where($column, 'like', '%'.addcslashes($value, '\\%_').'%');
     }
 }
