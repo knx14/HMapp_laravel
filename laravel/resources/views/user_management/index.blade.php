@@ -25,8 +25,8 @@
                         <input type="text" name="name" value="{{ $filters['name'] ?? '' }}" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="名前 を入力">
                     </div>
                     <div>
-                        <label class="block font-semibold mb-1">登録JA名</label>
-                        <input type="text" name="ja_name" value="{{ $filters['ja_name'] ?? '' }}" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="登録JA名 を入力">
+                        <label class="block font-semibold mb-1">所属</label>
+                        <input type="text" name="organization" value="{{ $filters['organization'] ?? '' }}" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="所属 を入力">
                     </div>
                 </div>
                 <label class="inline-flex items-center gap-2">
@@ -66,7 +66,7 @@
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">Cognito Sub</th>
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">名前</th>
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">メールアドレス</th>
-                                <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">JA名</th>
+                                <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">所属</th>
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">権限</th>
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">管理者になった日時</th>
                                 <th class="px-8 py-4 text-left text-sm font-semibold text-gray-700">作成日</th>
@@ -82,7 +82,7 @@
                                         <a href="{{ route('user-management.show', $user) }}" class="text-blue-600 hover:text-blue-800 font-semibold">{{ $user->name ?? '-' }}</a>
                                     </td>
                                     <td class="px-8 py-4 text-sm text-gray-900">{{ $user->email ?? '-' }}</td>
-                                    <td class="px-8 py-4 text-sm text-gray-900">{{ $user->ja_name ?? '-' }}</td>
+                                    <td class="px-8 py-4 text-sm text-gray-900">{{ $user->organization ?? '未入力' }}</td>
                                     <td class="px-8 py-4 text-sm">
                                         @if($user->isAdmin())
                                             <span class="inline-block px-2 py-1 rounded bg-purple-100 text-purple-800 font-semibold">管理者</span>

@@ -24,7 +24,7 @@
             <p class="text-gray-700"><span class="font-semibold">ID:</span> {{ $user->id }}</p>
             <p class="text-gray-700"><span class="font-semibold">名前:</span> {{ $user->name ?? '-' }}</p>
             <p class="text-gray-700"><span class="font-semibold">メール:</span> {{ $user->email ?? '-' }}</p>
-            <p class="text-gray-700"><span class="font-semibold">所属:</span> {{ $user->ja_name ?? '-' }}</p>
+            <p class="text-gray-700"><span class="font-semibold">所属:</span> {{ $user->organization ?? '未入力' }}</p>
             <p class="text-gray-700"><span class="font-semibold">権限:</span> {{ $user->isAdmin() ? '管理者' : '一般ユーザー' }}</p>
             @if($user->isAdmin())
                 <p class="text-gray-700"><span class="font-semibold">管理者になった日時:</span> {{ $user->admin_granted_at?->format('Y-m-d H:i') ?? '-' }}</p>
