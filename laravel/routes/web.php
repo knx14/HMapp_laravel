@@ -31,6 +31,17 @@ Route::middleware(['auth', 'organization'])->group(function () {
     Route::post('/profile/admin-key', [ProfileController::class, 'grantAdmin'])->name('profile.admin-key');
 
     Route::get('/farms', [FarmManagementController::class, 'index'])->name('farm-management.index');
+    Route::get('/farms/create', [FarmManagementController::class, 'create'])->name('farm-management.create');
+    Route::post('/farms', [FarmManagementController::class, 'store'])->name('farm-management.store');
+    Route::get('/farms/{farm}/edit', [FarmManagementController::class, 'edit'])
+        ->whereNumber('farm')
+        ->name('farm-management.edit');
+    Route::put('/farms/{farm}', [FarmManagementController::class, 'update'])
+        ->whereNumber('farm')
+        ->name('farm-management.update');
+    Route::delete('/farms/{farm}', [FarmManagementController::class, 'destroy'])
+        ->whereNumber('farm')
+        ->name('farm-management.destroy');
 
     // 測定データ閲覧
     Route::get('/measurements', [MeasurementController::class, 'index'])->name('measurements.index');
@@ -65,9 +76,6 @@ Route::middleware(['auth', 'organization', 'admin'])->group(function () {
     Route::get('/users', [UserManagementController::class, 'index'])->name('user-management.index');
     Route::get('/users/{user}', [UserManagementController::class, 'show'])->name('user-management.show');
     Route::post('/users/{user}/revoke-admin', [UserManagementController::class, 'revokeAdmin'])->name('user-management.revoke-admin');
-
-    Route::get('/farms/create', [FarmManagementController::class, 'create'])->name('farm-management.create');
-    Route::post('/farms', [FarmManagementController::class, 'store'])->name('farm-management.store');
 
     Route::put('/measurements/{upload}', [MeasurementController::class, 'update'])
         ->whereNumber('upload')

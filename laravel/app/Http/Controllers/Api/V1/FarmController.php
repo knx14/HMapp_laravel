@@ -7,13 +7,15 @@ use App\Http\Requests\Api\V1\Farm\StoreFarmRequest;
 use App\Http\Requests\Api\V1\Farm\UpdateFarmRequest;
 use App\Http\Resources\Api\V1\FarmResource;
 use App\Models\Farm;
+use App\Services\Farms\FarmDeleter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Schema;
 
 class FarmController extends Controller
 {
+    public function __construct(private FarmDeleter $deleter) {}
+
     /**
      * 自分の圃場一覧を取得
      */
@@ -84,16 +86,12 @@ class FarmController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        if ($farm->hasMeasurementData() || (Schema::hasTable('work_logs') && $farm->workLogs()->exists())) {
-            $farm->hide();
-
+        if ($this->deleter->delete($farm) === FarmDeleter::HIDDEN) {
             return response()->json([
                 'message' => 'farm_hidden',
                 'farm_id' => $farm->id,
             ]);
         }
-
-        $farm->delete();
 
         return response()->json(['message' => 'farm_deleted']);
     }
