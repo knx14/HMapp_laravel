@@ -27,6 +27,25 @@ class FarmPolicy
         return (int) $farm->app_user_id === (int) $user->id;
     }
 
+    /**
+     * Web 画面での編集・削除。管理者は全圃場、一般ユーザーは自分の表示中の圃場。
+     */
+    public function manage(AppUser $user, Farm $farm): bool
+    {
+        return $user->isAdmin() || ($this->own($user, $farm) && $farm->hidden_at === null);
+    }
+
+    /**
+     * 所有者の変更（別ユーザーへの移管）は管理者だけ。
+     */
+    public function changeOwner(AppUser $user, Farm $farm): bool
+    {
+        return $user->isAdmin();
+    }
+
+    /**
+     * モバイル向け API の更新。管理者でも自分の圃場だけ。
+     */
     public function update(AppUser $user, Farm $farm): bool
     {
         return $this->own($user, $farm);
