@@ -73,7 +73,7 @@ class MeasurementCsvExporter
             (string) $upload->cultivation_method,
             (string) $upload->crop_type,
             $upload->measurement_number === null ? '' : (string) $upload->measurement_number,
-            $upload->measurement_date?->format('Y-m-d') ?? '',
+            $upload->measuredAtLabel(),
             $this->number($point?->latitude),
             $this->number($point?->longitude),
         ];

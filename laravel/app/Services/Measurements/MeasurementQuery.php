@@ -25,6 +25,7 @@ class MeasurementQuery
                 'uploads.farm_id',
                 'uploads.file_path',
                 'uploads.measurement_date',
+                'uploads.measured_at',
                 'uploads.measurement_number',
                 'uploads.measurement_parameters',
                 'uploads.deleted_at',
@@ -52,6 +53,7 @@ class MeasurementQuery
 
         return $query
             ->orderByDesc('uploads.measurement_date')
+            ->orderByDesc('uploads.measured_at')
             ->orderBy('farms.farm_name')
             ->orderByRaw('uploads.measurement_number IS NULL')
             ->orderBy('uploads.measurement_number')
