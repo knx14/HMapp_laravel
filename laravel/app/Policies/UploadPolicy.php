@@ -22,13 +22,24 @@ class UploadPolicy
         return $upload->farm !== null && $this->farms->own($user, $upload->farm);
     }
 
+    /**
+     * Web 画面での地点の調整。モバイル向け API は own だけを使う。
+     */
     public function update(AppUser $user, Upload $upload): bool
     {
-        return $this->own($user, $upload);
+        return $user->isAdmin() || $this->own($user, $upload);
+    }
+
+    /**
+     * 推定値・測定日時・測定番号の編集は管理者だけ。
+     */
+    public function edit(AppUser $user, Upload $upload): bool
+    {
+        return $user->isAdmin();
     }
 
     public function delete(AppUser $user, Upload $upload): bool
     {
-        return $this->own($user, $upload);
+        return $user->isAdmin() || $this->own($user, $upload);
     }
 }

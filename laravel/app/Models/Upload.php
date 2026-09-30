@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\JstDateTime;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,6 +20,7 @@ class Upload extends Model
         'farm_id',
         'file_path',
         'measurement_date',
+        'measured_at',
         'measurement_number',
         'measurement_parameters',
         'note1',
@@ -29,6 +31,7 @@ class Upload extends Model
 
     protected $casts = [
         'measurement_date' => 'date',
+        'measured_at' => JstDateTime::class,
         'measurement_number' => 'integer',
         'measurement_parameters' => 'array',
     ];
@@ -57,5 +60,15 @@ class Upload extends Model
     public function isManualEntry(): bool
     {
         return ($this->measurement_parameters['manual_entry'] ?? false) === true;
+    }
+
+    /**
+     * 画面・CSV に出す測定日時（日本時間）。時刻の無い測定（手動入力など）は日付だけを返す。
+     */
+    public function measuredAtLabel(): string
+    {
+        return $this->measured_at?->format('Y-m-d H:i')
+            ?? $this->measurement_date?->format('Y-m-d')
+            ?? '';
     }
 }

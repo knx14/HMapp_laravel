@@ -35,6 +35,13 @@ Route::middleware(['auth', 'organization'])->group(function () {
     // 測定データ閲覧
     Route::get('/measurements', [MeasurementController::class, 'index'])->name('measurements.index');
     Route::post('/measurements/export', [MeasurementController::class, 'export'])->name('measurements.export');
+    Route::post('/measurements/delete', [MeasurementController::class, 'destroySelected'])->name('measurements.destroy-selected');
+    Route::get('/measurements/{upload}', [MeasurementController::class, 'show'])
+        ->whereNumber('upload')
+        ->name('measurements.show');
+    Route::patch('/measurements/{upload}/location', [MeasurementController::class, 'updateLocation'])
+        ->whereNumber('upload')
+        ->name('measurements.location');
 
     // 推定結果閲覧
     Route::get('/estimation-results', [EstimationResultsController::class, 'index'])->name('estimation-results.index');
@@ -62,7 +69,12 @@ Route::middleware(['auth', 'organization', 'admin'])->group(function () {
     Route::get('/farms/create', [FarmManagementController::class, 'create'])->name('farm-management.create');
     Route::post('/farms', [FarmManagementController::class, 'store'])->name('farm-management.store');
 
-    Route::get('/uploads', [UploadManagementController::class, 'index'])->name('upload-management.index');
+    Route::put('/measurements/{upload}', [MeasurementController::class, 'update'])
+        ->whereNumber('upload')
+        ->name('measurements.update');
+
+    // 旧アップロード管理の一覧は測定データ閲覧に統合した
+    Route::redirect('/uploads', '/measurements')->name('upload-management.index');
     Route::get('/uploads/create', [UploadManagementController::class, 'create'])->name('upload-management.create');
     Route::post('/uploads', [UploadManagementController::class, 'store'])->name('upload-management.store');
     Route::get('/uploads/download', [UploadManagementController::class, 'download'])->name('upload-management.download');
