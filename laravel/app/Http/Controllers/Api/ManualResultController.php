@@ -10,6 +10,7 @@ use App\Models\AppUser;
 use App\Models\Farm;
 use App\Models\ResultValue;
 use App\Models\Upload;
+use App\Services\Measurements\MeasurementDeleter;
 use App\Services\PolygonCentroidService;
 use App\Services\Results\ResultsAggregationService;
 use App\Support\SoilParameterUnits;
@@ -23,6 +24,7 @@ class ManualResultController extends Controller
     public function __construct(
         private ResultsAggregationService $results,
         private PolygonCentroidService $centroidService,
+        private MeasurementDeleter $deleter,
     ) {}
 
     public function store(StoreManualResultRequest $request): JsonResponse
@@ -175,7 +177,7 @@ class ManualResultController extends Controller
             return response()->json(['message' => 'manual_result_required'], 422);
         }
 
-        $upload->delete();
+        $this->deleter->delete($upload);
 
         return response()->json(['message' => 'deleted']);
     }

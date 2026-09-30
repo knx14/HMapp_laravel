@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AnalysisResult;
 use App\Models\AppUser;
+use App\Services\Measurements\MeasurementDeleter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 class AnalysisResultController extends Controller
 {
+    public function __construct(private MeasurementDeleter $deleter) {}
+
     /**
      * PATCH /api/v1/results/{analysisResult}/location
      * 測定地点の緯度経度を更新する。
@@ -51,7 +54,7 @@ class AnalysisResultController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        $analysisResult->upload->delete();
+        $this->deleter->delete($analysisResult->upload);
 
         return response()->json(['message' => 'deleted']);
     }

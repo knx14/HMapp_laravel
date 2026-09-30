@@ -11,50 +11,6 @@ use Illuminate\Support\Facades\Storage;
 
 class UploadManagementController extends Controller
 {
-    public function index(Request $request)
-    {
-        $query = Upload::with(['farm.appUser']);
-
-        // 圃場所有者の名前で検索
-        if ($request->filled('owner_name')) {
-            $query->whereHas('farm.appUser', function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->owner_name . '%')
-                  ->orWhere('ja_name', 'like', '%' . $request->owner_name . '%');
-            });
-        }
-
-        // 分析日付で検索
-        if ($request->filled('measurement_date')) {
-            $query->where('measurement_date', $request->measurement_date);
-        }
-
-        $uploads = $query->orderBy('created_at', 'desc')->paginate(20);
-
-        // モーダル用データを事前に整形（ページネーションされたアイテムのみ）
-        $uploadsForModal = $uploads->getCollection()->map(function($upload) {
-            return [
-                'id' => $upload->id,
-                'farm_id' => $upload->farm_id,
-                'file_path' => $upload->file_path,
-                'measurement_date' => $upload->measurement_date ? $upload->measurement_date->format('Y-m-d') : null,
-                'status' => $upload->status ?? 'uploaded',
-                'note1' => $upload->note1,
-                'note2' => $upload->note2,
-                'cultivation_type' => $upload->cultivation_type,
-                'measurement_parameters' => $upload->measurement_parameters,
-                'owner_name' => $upload->farm->appUser->name ?? '-',
-                'farm_name' => $upload->farm->farm_name ?? '-',
-                'created_at' => $upload->created_at ? $upload->created_at->format('Y-m-d H:i:s') : null,
-                'updated_at' => $upload->updated_at ? $upload->updated_at->format('Y-m-d H:i:s') : null,
-            ];
-        })->values()->all();
-
-        return view('upload_management.index', [
-            'uploads' => $uploads,
-            'uploadsForModal' => $uploadsForModal,
-        ]);
-    }
-
     /**
      * 新規アップロード登録フォームを表示
      */
@@ -113,7 +69,7 @@ class UploadManagementController extends Controller
         try {
             Upload::create($data);
             
-            return redirect()->route('upload-management.index')
+            return redirect()->route('measurements.index')
                 ->with('success', 'アップロードが正常に登録されました。');
                 
         } catch (\Exception $e) {
