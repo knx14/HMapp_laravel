@@ -14,7 +14,13 @@ class AppUserFactory extends Factory
             'name' => $this->faker->name(),
             'email' => $this->faker->unique()->safeEmail(),
             'ja_name' => $this->faker->name(),
+            'organization' => 'テスト農協',
         ];
+    }
+
+    public function withoutOrganization(): static
+    {
+        return $this->state(fn () => ['organization' => null]);
     }
 
     public function admin(): static

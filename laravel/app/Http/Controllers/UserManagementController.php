@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AppUser;
 use App\Services\Admin\AdminRoleService;
+use App\Support\OrganizationName;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -13,7 +14,7 @@ class UserManagementController extends Controller
 	public function index(Request $request)
 	{
 		$name = $request->query('name');
-		$jaName = $request->query('ja_name');
+		$organization = $request->query('organization');
 		$cognitoSub = $request->query('cognito_sub');
 		$role = $request->query('role') === AppUser::ROLE_ADMIN ? AppUser::ROLE_ADMIN : '';
 
@@ -21,8 +22,8 @@ class UserManagementController extends Controller
 		if (!empty($name)) {
 			$query->where('name', 'like', '%' . $name . '%');
 		}
-		if (!empty($jaName)) {
-			$query->where('ja_name', 'like', '%' . $jaName . '%');
+		if (!empty($organization)) {
+			$query->where('organization', 'like', '%' . (OrganizationName::normalize($organization) ?? '') . '%');
 		}
 		if (!empty($cognitoSub)) {
 			$query->where('cognito_sub', 'like', '%' . $cognitoSub . '%');
@@ -37,7 +38,7 @@ class UserManagementController extends Controller
 			'users' => $users,
 			'filters' => [
 				'name' => $name ?? '',
-				'ja_name' => $jaName ?? '',
+				'organization' => $organization ?? '',
 				'cognito_sub' => $cognitoSub ?? '',
 				'role' => $role,
 			],
