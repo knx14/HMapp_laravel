@@ -8,6 +8,7 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\FarmManagementController;
 use App\Http\Controllers\EstimationResultsController;
 use App\Http\Controllers\MeasurementController;
+use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\UploadManagementController;
 
 Route::get('/', function () {
@@ -18,8 +19,14 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
-// 一般ユーザー・管理者の両方が使う画面（表示範囲はコントローラーで絞る）
+// 所属の入力（所属が未入力でも開ける）
 Route::middleware('auth')->group(function () {
+    Route::get('/organization', [OrganizationController::class, 'edit'])->name('organization.edit');
+    Route::put('/organization', [OrganizationController::class, 'update'])->name('organization.update');
+});
+
+// 一般ユーザー・管理者の両方が使う画面（表示範囲はコントローラーで絞る）
+Route::middleware(['auth', 'organization'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile/admin-key', [ProfileController::class, 'grantAdmin'])->name('profile.admin-key');
 
@@ -45,7 +52,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // 管理者専用の画面
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth', 'organization', 'admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/users', [UserManagementController::class, 'index'])->name('user-management.index');

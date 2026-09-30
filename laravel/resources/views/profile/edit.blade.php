@@ -29,16 +29,40 @@
                         <dd class="text-sm text-gray-900 col-span-2">{{ $user->email }}</dd>
                     </div>
                     <div class="py-3 grid grid-cols-3 gap-4">
-                        <dt class="text-sm font-medium text-gray-500">所属</dt>
-                        <dd class="text-sm text-gray-900 col-span-2">{{ $user->ja_name ?: '未設定' }}</dd>
-                    </div>
-                    <div class="py-3 grid grid-cols-3 gap-4">
                         <dt class="text-sm font-medium text-gray-500">権限</dt>
                         <dd class="text-sm text-gray-900 col-span-2">
                             {{ $user->isAdmin() ? '管理者' : '一般ユーザー' }}
                         </dd>
                     </div>
                 </dl>
+            </div>
+        </div>
+
+        <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+            <div class="max-w-xl">
+                <h2 class="text-lg font-medium text-gray-900">所属</h2>
+                <p class="mt-1 text-sm text-gray-600">
+                    農業協同組合・支所・会社名などを入力してください。
+                </p>
+
+                <form method="POST" action="{{ route('organization.update') }}" class="mt-6 space-y-4">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="return_to" value="profile">
+                    <div>
+                        <label for="organization" class="block text-sm font-medium text-gray-700">所属</label>
+                        <input id="organization" name="organization" type="text" required maxlength="{{ \App\Support\OrganizationName::MAX_LENGTH }}"
+                               value="{{ old('organization', $user->organization) }}"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        @error('organization')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <button type="submit"
+                            class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
+                        変更する
+                    </button>
+                </form>
             </div>
         </div>
 
