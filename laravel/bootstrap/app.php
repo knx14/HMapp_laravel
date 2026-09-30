@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'cognito.jwt' => \App\Http\Middleware\CognitoJwtMiddleware::class,
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
+            'organization' => \App\Http\Middleware\EnsureOrganization::class,
         ]);
 
         $middleware->web(append: [

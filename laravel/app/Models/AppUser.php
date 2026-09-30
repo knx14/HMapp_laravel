@@ -21,6 +21,7 @@ class AppUser extends Authenticatable
 		'name',
 		'email',
 		'ja_name',
+		'organization',
 	];
 
 	protected $hidden = [
@@ -45,6 +46,11 @@ class AppUser extends Authenticatable
 	public function isAdmin(): bool
 	{
 		return $this->role === self::ROLE_ADMIN;
+	}
+
+	public function hasOrganization(): bool
+	{
+		return $this->organization !== null && $this->organization !== '';
 	}
 
 	/**
