@@ -9,6 +9,7 @@ use App\Services\Cognito\CognitoAuthException;
 use App\Services\Cognito\CognitoAuthResult;
 use App\Services\Cognito\CognitoAuthService;
 use App\Services\Cognito\CognitoUserMissingException;
+use App\Services\Cognito\DeletedAccountException;
 use App\Services\Cognito\CognitoWebSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -85,6 +86,8 @@ class AuthenticatedSessionController extends Controller
             $user = $webSession->login($request, $result->tokens);
         } catch (CognitoUserMissingException) {
             throw ValidationException::withMessages(['email' => 'アカウント情報が見つかりません。管理者にお問い合わせください。']);
+        } catch (DeletedAccountException $e) {
+            throw ValidationException::withMessages(['email' => $e->getMessage()]);
         } catch (\Throwable $e) {
             Log::error('Cognito id token verification failed', ['error' => $e->getMessage()]);
 

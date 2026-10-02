@@ -285,6 +285,11 @@
         });
     });
 
+    const openId = new URLSearchParams(window.location.search).get('open');
+    if (openId) {
+        openDetail(openId);
+    }
+
     document.getElementById('measurement-modal-close').addEventListener('click', closeModal);
     modal.addEventListener('click', (event) => {
         if (event.target === modal) closeModal();

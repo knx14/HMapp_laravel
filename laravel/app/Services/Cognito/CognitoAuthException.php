@@ -14,6 +14,8 @@ class CognitoAuthException extends \RuntimeException
     public const LIMIT_EXCEEDED = 'LimitExceededException';
     public const TOO_MANY_REQUESTS = 'TooManyRequestsException';
     public const NOT_CONFIGURED = 'NotConfigured';
+    public const ALIAS_EXISTS = 'AliasExistsException';
+    public const INVALID_PARAMETER = 'InvalidParameterException';
 
     public function __construct(public readonly string $errorCode, string $message = '', ?\Throwable $previous = null)
     {
@@ -37,6 +39,8 @@ class CognitoAuthException extends \RuntimeException
             self::CODE_MISMATCH => '確認コードが違います。',
             self::EXPIRED_CODE => '確認コードの有効期限が切れています。もう一度コードを送信してください。',
             self::LIMIT_EXCEEDED, self::TOO_MANY_REQUESTS => '試行回数が多すぎます。しばらくしてから再度お試しください。',
+            self::ALIAS_EXISTS => 'このメールアドレスは既に使われています。',
+            self::INVALID_PARAMETER => '入力内容を確認してください。',
             self::NOT_CONFIGURED => 'ログイン機能の設定が完了していません。管理者にお問い合わせください。',
             default => 'ログイン処理でエラーが発生しました。しばらくしてから再度お試しください。',
         };

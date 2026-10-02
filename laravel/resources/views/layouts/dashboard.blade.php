@@ -75,7 +75,7 @@
                     </li>
                     @endcan
                     <li>
-                        <a href="{{ route('farm-management.index') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('farm-management.index') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
+                        <a href="{{ route('farm-management.index') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('farm-management.*') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
                             <span class="mr-3">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -92,16 +92,6 @@
                                 </svg>
                             </span>
                             測定データ閲覧
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ route('estimation-results.index') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('estimation-results.index') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
-                            <span class="mr-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M5 11h14M7 15h10M9 19h6" />
-                                </svg>
-                            </span>
-                            推定結果閲覧
                         </a>
                     </li>
                     <li>
