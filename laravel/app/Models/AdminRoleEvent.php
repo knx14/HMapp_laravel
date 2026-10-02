@@ -27,12 +27,12 @@ class AdminRoleEvent extends Model
 
     public function appUser(): BelongsTo
     {
-        return $this->belongsTo(AppUser::class);
+        return $this->belongsTo(AppUser::class)->withTrashed();
     }
 
     public function actor(): BelongsTo
     {
-        return $this->belongsTo(AppUser::class, 'actor_app_user_id');
+        return $this->belongsTo(AppUser::class, 'actor_app_user_id')->withTrashed();
     }
 
     public function actionLabel(): string

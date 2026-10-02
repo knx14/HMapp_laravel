@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\WorkType;
 use App\Http\Requests\SaveFarmRequest;
 use App\Models\AppUser;
 use App\Models\Farm;
 use App\Services\Farms\FarmDeleter;
+use App\Services\Results\FarmTimelineService;
 use App\Services\Results\ResultsAggregationService;
+use App\Services\Results\ResultsTimeseriesService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -71,6 +74,39 @@ class FarmManagementController extends Controller
             'sort' => $sort,
             'sorts' => $isAdmin ? self::SORTS : array_diff_key(self::SORTS, ['user_name' => true]),
             'isAdmin' => $isAdmin,
+        ]);
+    }
+
+    public function show(
+        Request $request,
+        Farm $farm,
+        ResultsTimeseriesService $timeseries,
+        FarmTimelineService $timeline,
+    ) {
+        Gate::authorize('view', $farm);
+
+        $dates = $this->results->getCompletedDistinctDatesForFarm((int) $farm->id);
+        $selectedDate = (string) $request->query('date', '');
+        if (! in_array($selectedDate, $dates, true)) {
+            $selectedDate = $dates[0] ?? null;
+        }
+
+        $series = [];
+        foreach ($timeseries->allowedParameters() as $parameter) {
+            $series[$parameter] = $timeseries->get((int) $farm->id, $parameter);
+        }
+
+        return view('farm_management.show', [
+            'farm' => $farm->load('appUser'),
+            'dates' => $dates,
+            'selectedDate' => $selectedDate,
+            'points' => $selectedDate ? $this->results->fetchPointsForFarmDate((int) $farm->id, $selectedDate) : [],
+            'boundary' => $this->results->normalizeBoundaryPolygon($farm->boundary_polygon),
+            'series' => $series,
+            'timeline' => $timeline->get((int) $farm->id),
+            'canManageWorkLogs' => Gate::allows('manage', $farm),
+            'workTypes' => collect(WorkType::cases())->mapWithKeys(fn (WorkType $type) => [$type->value => $type->label()]),
+            'isAdmin' => $request->user()->isAdmin(),
         ]);
     }
 
