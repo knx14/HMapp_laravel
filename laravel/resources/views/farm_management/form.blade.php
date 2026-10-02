@@ -107,7 +107,7 @@
                             <button type="button" id="clearPointsBtn" class="bg-white border border-red-300 hover:bg-red-50 text-red-600 text-sm font-semibold py-1 px-3 rounded">境界をクリア</button>
                         </div>
                     </div>
-                    <div id="boundaryMap" class="w-full h-[28rem] bg-gray-200 rounded-lg"></div>
+                    <div id="boundaryMap" class="relative w-full h-[28rem] overflow-hidden bg-gray-200 rounded-lg"></div>
                     <p id="boundaryStatus" class="mt-2 text-sm text-gray-600"></p>
                     <p id="mapError" class="hidden mt-2 text-sm text-red-600"></p>
                     <input type="hidden" id="boundary_polygon" name="boundary_polygon" value="{{ $initialBoundary }}">
@@ -143,7 +143,7 @@
 </div>
 
 <script>
-    const API_KEY = '{{ env('GOOGLE_MAPS_API_KEY') }}';
+    const API_KEY = @json(config('services.google.maps_api_key'));
     const MIN_POINTS = 4;
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -169,16 +169,34 @@
 
     function loadGoogleMapsAPI() {
         return new Promise((resolve, reject) => {
-            if (window.google && window.google.maps) {
+            if (!API_KEY) {
+                reject(new Error('missing api key'));
+                return;
+            }
+            if (window.google && window.google.maps && window.google.maps.Map) {
                 resolve();
                 return;
             }
+            const callback = `hmMapsReady_${Date.now()}`;
+            window[callback] = async () => {
+                delete window[callback];
+                try {
+                    if (google.maps.importLibrary) {
+                        await google.maps.importLibrary('maps');
+                        await google.maps.importLibrary('geometry');
+                    }
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            };
             const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=geometry`;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(API_KEY)}&libraries=geometry&loading=async&callback=${callback}`;
             script.async = true;
-            script.defer = true;
-            script.onload = resolve;
-            script.onerror = reject;
+            script.onerror = () => {
+                delete window[callback];
+                reject(new Error('map script'));
+            };
             document.head.appendChild(script);
         });
     }

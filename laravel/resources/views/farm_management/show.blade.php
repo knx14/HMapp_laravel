@@ -68,7 +68,7 @@
                     @endforeach
                 </div>
             </div>
-            <div id="map" class="w-full h-[28rem] bg-gray-200 rounded-lg"></div>
+            <div id="map" class="relative w-full h-[28rem] overflow-hidden bg-gray-200 rounded-lg"></div>
             <p id="map-empty" class="hidden mt-3 text-sm text-gray-500">この測定日の地点がありません。</p>
             <div id="colorbar-container" class="mt-4 hidden">
                 <div class="flex items-center justify-between mb-2">
@@ -243,7 +243,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (() => {
-    const API_KEY = @json(env('GOOGLE_MAPS_API_KEY'));
+    const API_KEY = @json(config('services.google.maps_api_key'));
     const points = @json($points);
     const boundary = @json($boundary);
     const series = @json($series);
@@ -260,15 +260,34 @@
 
     function loadGoogleMaps() {
         return new Promise((resolve, reject) => {
-            if (window.google && window.google.maps) {
+            if (!API_KEY) {
+                reject(new Error('missing api key'));
+                return;
+            }
+            if (window.google && window.google.maps && window.google.maps.Map) {
                 resolve();
                 return;
             }
+            const callback = `hmMapsReady_${Date.now()}`;
+            window[callback] = async () => {
+                delete window[callback];
+                try {
+                    if (google.maps.importLibrary) {
+                        await google.maps.importLibrary('maps');
+                        await google.maps.importLibrary('geometry');
+                    }
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            };
             const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=geometry`;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(API_KEY)}&libraries=geometry&loading=async&callback=${callback}`;
             script.async = true;
-            script.onload = resolve;
-            script.onerror = reject;
+            script.onerror = () => {
+                delete window[callback];
+                reject(new Error('map script'));
+            };
             document.head.appendChild(script);
         });
     }
@@ -392,6 +411,7 @@
         };
         overlay.draw = function () {
             const projection = this.getProjection();
+            if (!projection) return;
             const sw = projection.fromLatLngToDivPixel(bounds.getSouthWest());
             const ne = projection.fromLatLngToDivPixel(bounds.getNorthEast());
             if (!sw || !ne) return;

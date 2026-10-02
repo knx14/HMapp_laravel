@@ -228,7 +228,7 @@
                     </form>
                 </div>
                 <div>
-                    <div id="measurement-map" class="w-full h-80 rounded-lg bg-gray-100"></div>
+                    <div id="measurement-map" class="relative w-full h-80 overflow-hidden rounded-lg bg-gray-100"></div>
                     <p id="measurement-map-note" class="text-xs text-gray-500 mt-2"></p>
                     <button type="button" id="measurement-location-save" class="hidden mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">この地点で保存</button>
                 </div>
@@ -239,7 +239,7 @@
 
 <script>
 (() => {
-    const API_KEY = '{{ env('GOOGLE_MAPS_API_KEY') }}';
+    const API_KEY = @json(config('services.google.maps_api_key'));
     const CSRF_TOKEN = '{{ csrf_token() }}';
     const detailUrl = (id) => `{{ url('/measurements') }}/${id}`;
 
@@ -343,6 +343,9 @@
     }
 
     function render(data) {
+        if (!data || !data.farm) {
+            throw new Error('詳細を読み込めませんでした。');
+        }
         current = data;
         body.classList.remove('hidden');
 
@@ -359,7 +362,7 @@
             ['作物種別', data.farm.crop_type ?? '-'],
             ['測定番号', data.measurement_number ?? '-'],
             ['測定日時', data.measured_at || '-'],
-            ...data.values.map((item) => [item.parameter, formatValue(item)]),
+            ...(data.values || []).map((item) => [item.parameter, formatValue(item)]),
             ['推定日時', data.estimated_at ?? '-'],
             ['推定モデル', data.estimation_model],
         );
@@ -374,7 +377,9 @@
         }));
 
         renderEditForm(data);
-        renderMap(data);
+        renderMap(data).catch(() => {
+            mapNote.textContent = '地図を読み込めませんでした。';
+        });
     }
 
     function renderEditForm(data) {
@@ -426,15 +431,34 @@
 
     function loadGoogleMaps() {
         return new Promise((resolve, reject) => {
-            if (window.google && window.google.maps) {
+            if (!API_KEY) {
+                reject(new Error('missing api key'));
+                return;
+            }
+            if (window.google && window.google.maps && window.google.maps.Map) {
                 resolve();
                 return;
             }
+            const callback = `hmMapsReady_${Date.now()}`;
+            window[callback] = async () => {
+                delete window[callback];
+                try {
+                    if (google.maps.importLibrary) {
+                        await google.maps.importLibrary('maps');
+                        await google.maps.importLibrary('geometry');
+                    }
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            };
             const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=geometry`;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(API_KEY)}&libraries=geometry&loading=async&callback=${callback}`;
             script.async = true;
-            script.onload = resolve;
-            script.onerror = reject;
+            script.onerror = () => {
+                delete window[callback];
+                reject(new Error('map script'));
+            };
             document.head.appendChild(script);
         });
     }
