@@ -59,7 +59,7 @@ class Farm extends Model
      */
     public function appUser(): BelongsTo
     {
-        return $this->belongsTo(AppUser::class);
+        return $this->belongsTo(AppUser::class)->withTrashed();
     }
 
     /**

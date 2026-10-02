@@ -33,11 +33,14 @@ class CognitoWebSession
         $claims = $this->jwtVerifier->verifyIdToken($tokens->idToken)['claims'];
         $sub = (string) $claims['sub'];
 
-        $user = AppUser::where('cognito_sub', $sub)->first();
+        $user = AppUser::withTrashed()->where('cognito_sub', $sub)->first();
         if ($user === null) {
             Log::warning('Cognito login succeeded but app_users row is missing', ['cognito_sub' => $sub]);
 
             throw new CognitoUserMissingException($sub);
+        }
+        if ($user->trashed()) {
+            throw new DeletedAccountException;
         }
 
         Auth::guard('web')->login($user);
@@ -113,6 +116,33 @@ class CognitoWebSession
         }
 
         return Crypt::decryptString($data['access_token']);
+    }
+
+    /**
+     * ID トークンの cognito:username。メールアドレスがユーザー名のプールではメールアドレス、エイリアスのプールでは別の識別子。
+     */
+    public function username(Request $request): ?string
+    {
+        $data = $request->session()->get(self::KEY);
+        if (! is_array($data) || empty($data['username'])) {
+            return null;
+        }
+
+        return (string) $data['username'];
+    }
+
+    /**
+     * メールアドレスが Cognito のユーザー名だった場合、確認後のユーザー名を新しいメールアドレスに合わせる。
+     */
+    public function updateUsername(Request $request, string $username): void
+    {
+        $data = $request->session()->get(self::KEY);
+        if (! is_array($data)) {
+            return;
+        }
+
+        $data['username'] = $username;
+        $request->session()->put(self::KEY, $data);
     }
 
     private function store(Request $request, CognitoTokens $tokens, string $username): void

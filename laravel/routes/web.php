@@ -6,7 +6,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\FarmManagementController;
+use App\Http\Controllers\FarmWorkLogController;
 use App\Http\Controllers\EstimationResultsController;
+use App\Models\Upload;
 use App\Http\Controllers\MeasurementController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\UploadManagementController;
@@ -28,11 +30,31 @@ Route::middleware('auth')->group(function () {
 // 一般ユーザー・管理者の両方が使う画面（表示範囲はコントローラーで絞る）
 Route::middleware(['auth', 'organization'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile/name', [ProfileController::class, 'updateName'])->name('profile.name');
+    Route::post('/profile/email', [ProfileController::class, 'requestEmailChange'])->name('profile.email');
+    Route::post('/profile/email/verify', [ProfileController::class, 'confirmEmailChange'])->name('profile.email.verify');
+    Route::delete('/profile/email/pending', [ProfileController::class, 'cancelEmailChange'])->name('profile.email.cancel');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/profile/admin-key', [ProfileController::class, 'grantAdmin'])->name('profile.admin-key');
 
     Route::get('/farms', [FarmManagementController::class, 'index'])->name('farm-management.index');
     Route::get('/farms/create', [FarmManagementController::class, 'create'])->name('farm-management.create');
     Route::post('/farms', [FarmManagementController::class, 'store'])->name('farm-management.store');
+    Route::get('/farms/{farm}', [FarmManagementController::class, 'show'])
+        ->whereNumber('farm')
+        ->name('farm-management.show');
+    Route::post('/farms/{farm}/work-logs', [FarmWorkLogController::class, 'store'])
+        ->whereNumber('farm')
+        ->name('farm-management.work-logs.store');
+    Route::put('/farms/{farm}/work-logs/{workLog}', [FarmWorkLogController::class, 'update'])
+        ->whereNumber('farm')
+        ->whereNumber('workLog')
+        ->name('farm-management.work-logs.update');
+    Route::delete('/farms/{farm}/work-logs/{workLog}', [FarmWorkLogController::class, 'destroy'])
+        ->whereNumber('farm')
+        ->whereNumber('workLog')
+        ->name('farm-management.work-logs.destroy');
     Route::get('/farms/{farm}/edit', [FarmManagementController::class, 'edit'])
         ->whereNumber('farm')
         ->name('farm-management.edit');
@@ -54,12 +76,21 @@ Route::middleware(['auth', 'organization'])->group(function () {
         ->whereNumber('upload')
         ->name('measurements.location');
 
-    // 推定結果閲覧
-    Route::get('/estimation-results', [EstimationResultsController::class, 'index'])->name('estimation-results.index');
-    Route::get('/estimation-results/farms/{farm}', [EstimationResultsController::class, 'farmDates'])
+    // 旧「推定結果閲覧」は圃場詳細へ移した
+    Route::get('/estimation-results', fn () => redirect()->route('farm-management.index'))
+        ->name('estimation-results.index');
+    Route::get('/estimation-results/farms/{farm}', fn (int $farm) => redirect()->route('farm-management.show', $farm))
         ->whereNumber('farm')
         ->name('estimation-results.farm-dates');
-    Route::get('/estimation-results/farms/{farm}/uploads/{upload}', [EstimationResultsController::class, 'cecMap'])
+    Route::get('/estimation-results/farms/{farm}/uploads/{upload}', function (int $farm, int $upload) {
+        $row = Upload::query()->where('farm_id', $farm)->findOrFail($upload);
+        $date = $row->measurement_date?->format('Y-m-d');
+
+        return redirect()->route('farm-management.show', array_filter([
+            'farm' => $farm,
+            'date' => $date,
+        ]));
+    })
         ->whereNumber('farm')
         ->whereNumber('upload')
         ->name('estimation-results.cec');

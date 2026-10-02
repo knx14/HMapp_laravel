@@ -8,8 +8,8 @@ class CognitoUserResolver
 {
     public function resolve(string $sub, ?string $email = null, ?string $name = null): AppUser
     {
-        $user = AppUser::where('cognito_sub', $sub)->first();
-        if ($user) {
+        $user = AppUser::withTrashed()->where('cognito_sub', $sub)->first();
+        if ($user && ! $user->trashed()) {
             return $user;
         }
 
