@@ -33,7 +33,7 @@
         <!-- 地図表示エリア -->
         <div class="bg-white rounded-2xl shadow p-6 mb-6">
             <h3 class="text-lg font-semibold mb-4">Googleマップ（CEC値ヒートマップ）</h3>
-            <div id="map" class="w-full h-96 bg-gray-200 rounded-lg"></div>
+            <div id="map" class="relative w-full h-96 overflow-hidden bg-gray-200 rounded-lg"></div>
             <div id="loading" class="hidden text-center py-4 text-gray-600">地図を読み込み中...</div>
             <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mt-4"></div>
             
@@ -74,7 +74,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    const API_KEY = '{{ env('GOOGLE_MAPS_API_KEY') }}';
+    const API_KEY = @json(config('services.google.maps_api_key'));
 
     const boundaryPolygonRaw = @json($boundaryPolygon);
     const pointsRaw = @json($points);
@@ -114,16 +114,34 @@
 
     function loadGoogleMapsAPI() {
         return new Promise((resolve, reject) => {
-            if (window.google && window.google.maps) { 
-                resolve(); 
-                return; 
+            if (!API_KEY) {
+                reject(new Error('missing api key'));
+                return;
             }
+            if (window.google && window.google.maps && window.google.maps.Map) {
+                resolve();
+                return;
+            }
+            const callback = `hmMapsReady_${Date.now()}`;
+            window[callback] = async () => {
+                delete window[callback];
+                try {
+                    if (google.maps.importLibrary) {
+                        await google.maps.importLibrary('maps');
+                        await google.maps.importLibrary('geometry');
+                    }
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            };
             const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=geometry`;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(API_KEY)}&libraries=geometry&loading=async&callback=${callback}`;
             script.async = true;
-            script.defer = true;
-            script.onload = resolve;
-            script.onerror = reject;
+            script.onerror = () => {
+                delete window[callback];
+                reject(new Error('map script'));
+            };
             document.head.appendChild(script);
         });
     }

@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    // Blade から env() を呼ぶと、本番の config:cache 後に null になる。
+    'google' => [
+        'maps_api_key' => env('GOOGLE_MAPS_API_KEY'),
+    ],
+
 ];
