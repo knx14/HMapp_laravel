@@ -43,7 +43,48 @@
     </div>
 
 </div>
-<div>
-    <div class="text-3xl font-bold">最近の推定結果</div>
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <div class="px-6 py-5 border-b border-gray-200 flex flex-wrap justify-between items-center gap-3">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">最近の推定結果</h2>
+            <p class="text-gray-500 mt-1">全ユーザーの推定完了を新しい順に10件表示します。行を開くと測定データの詳細を表示します。</p>
+        </div>
+        <a href="{{ route('measurements.index') }}" class="text-blue-600 hover:text-blue-800 font-semibold">測定データ閲覧へ</a>
+    </div>
+
+    @if($recentResults->isEmpty())
+        <p class="px-6 py-10 text-gray-500">推定結果はまだありません。</p>
+    @else
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">ユーザー名</th>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">圃場名</th>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">栽培方式</th>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">作物種別</th>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">測定日</th>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">測定番号</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    @foreach($recentResults as $result)
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $result->user_name ?? '-' }}</td>
+                            <td class="px-6 py-4 text-sm">
+                                <a href="{{ route('measurements.index', ['open' => $result->id]) }}" class="text-blue-600 hover:text-blue-800 font-semibold">
+                                    {{ $result->farm_name }}
+                                </a>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $result->cultivation_method ?: '-' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $result->crop_type ?: '-' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $result->measuredAtLabel() ?: '-' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $result->measurement_number ?? '-' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
 </div>
 @endsection

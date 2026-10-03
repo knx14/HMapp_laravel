@@ -9,142 +9,11 @@ use App\Models\Upload;
 use App\Support\SoilParameterUnits;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class EstimationResultsController extends Controller
 {
-    public function index(Request $request)
-    {
-        $input = $request->only(['cultivation_method', 'crop_type']);
-
-        $query = Farm::with('appUser')->accessibleBy($request->user());
-
-        if (!empty($input['cultivation_method'])) {
-            $query->where('cultivation_method', 'like', '%' . $input['cultivation_method'] . '%');
-        }
-
-        if (!empty($input['crop_type'])) {
-            $query->where('crop_type', 'like', '%' . $input['crop_type'] . '%');
-        }
-
-        $farms = $query->orderBy('id')->paginate(10);
-
-        return view('estimation_results.index', [
-            'farms' => $farms,
-            'input' => $input,
-        ]);
-    }
-
-    public function farmDates(int $farmId)
-    {
-        $farm = Farm::findOrFail($farmId);
-        Gate::authorize('view', $farm);
-
-        // completedのものだけを取得（同一 measurement_date を1件に集約）
-        $groupedDates = Upload::query()
-            ->where('farm_id', $farm->id)
-            ->where('status', Upload::STATUS_COMPLETED)
-            ->selectRaw('measurement_date, MAX(id) as upload_id')
-            ->groupBy('measurement_date')
-            ->orderByDesc('measurement_date')
-            ->get();
-
-        // uploadedのものを取得（結果入力用 - 測定点入力前）
-        $pendingUploads = Upload::where('farm_id', $farm->id)
-            ->where('status', Upload::STATUS_UPLOADED)
-            ->orderBy('measurement_date', 'desc')
-            ->get();
-
-        // processingのものを取得（結果入力用 - 測定点入力済み、測定値入力待ち）
-        $processingUploads = Upload::where('farm_id', $farm->id)
-            ->where('status', Upload::STATUS_PROCESSING)
-            ->whereHas('analysisResult')
-            ->with('analysisResult')
-            ->orderBy('measurement_date', 'desc')
-            ->get();
-
-        return view('estimation_results.farm_dates', [
-            'farm' => $farm,
-            'groupedDates' => $groupedDates,
-            'pendingUploads' => $pendingUploads,
-            'processingUploads' => $processingUploads,
-        ]);
-    }
-
-    public function cecMap(int $farmId, int $uploadId)
-    {
-        $farm = Farm::findOrFail($farmId);
-        Gate::authorize('view', $farm);
-        $upload = Upload::where('id', $uploadId)->where('farm_id', $farm->id)->firstOrFail();
-
-        // 選択した日付と同じ日付のアップロードIDを取得（同じ日に複数点取得したデータをまとめて表示）
-        $uploadIds = Upload::where('farm_id', $farm->id)
-            ->where('measurement_date', $upload->measurement_date)
-            ->pluck('id');
-
-        // analysis_results から該当アップロード群の座標とIDを取得
-        $analysisPoints = AnalysisResult::whereIn('upload_id', $uploadIds)
-            ->get(['id', 'upload_id', 'latitude', 'longitude']);
-
-        $analysisIds = $analysisPoints->pluck('id')->all();
-
-        // result_values から全パラメータを取得してIDごとにグルーピング
-        $allValues = ResultValue::whereIn('analysis_result_id', $analysisIds)
-            ->get(['analysis_result_id', 'parameter_name', 'parameter_value', 'unit'])
-            ->groupBy('analysis_result_id');
-
-        $uploadsById = Upload::query()
-            ->whereIn('id', $uploadIds)
-            ->get(['id', 'measurement_number'])
-            ->keyBy('id');
-
-        // フロントに渡す形 {lat, lng, values: [{parameter, value, unit}], cec, measurement_number} の配列
-        $points = $analysisPoints->map(function ($p) use ($allValues, $uploadsById) {
-            $valuesForPoint = $allValues->get($p->id, collect());
-            $cecValue = optional($valuesForPoint->firstWhere('parameter_name', 'CEC'))->parameter_value;
-            $measurementNumber = $uploadsById->get($p->upload_id)?->measurement_number;
-            return [
-                'upload_id' => (int) $p->upload_id,
-                'measurement_number' => is_null($measurementNumber) ? null : (int) $measurementNumber,
-                'lat' => (float) $p->latitude,
-                'lng' => (float) $p->longitude,
-                'cec' => is_null($cecValue) ? null : (float) $cecValue,
-                'values' => $valuesForPoint->map(function ($rv) {
-                    return [
-                        'parameter' => $rv->parameter_name,
-                        'value' => (float) $rv->parameter_value,
-                        'unit' => SoilParameterUnits::displayUnit((string) $rv->parameter_name, $rv->unit),
-                    ];
-                })->values(),
-            ];
-        })->sort(function (array $a, array $b): int {
-            $aNumber = $a['measurement_number'];
-            $bNumber = $b['measurement_number'];
-            if ($aNumber === null && $bNumber === null) {
-                return ($a['upload_id'] ?? 0) <=> ($b['upload_id'] ?? 0);
-            }
-            if ($aNumber === null) {
-                return 1;
-            }
-            if ($bNumber === null) {
-                return -1;
-            }
-
-            return $aNumber <=> $bNumber;
-        })->values();
-
-        $boundaryPolygon = $farm->boundary_polygon ?? [];
-
-        return view('estimation_results.cec_map', [
-            'farm' => $farm,
-            'upload' => $upload,
-            'boundaryPolygon' => $boundaryPolygon,
-            'points' => $points,
-        ]);
-    }
-
     /**
      * 結果入力ページを表示
      * status='uploaded'でfarmIdが一致するUploadを取得
@@ -327,7 +196,7 @@ class EstimationResultsController extends Controller
 
             DB::commit();
 
-            return redirect()->route('estimation-results.farm-dates', ['farm' => $farmId])
+            return redirect()->route('measurements.index')
                 ->with('success', '測定値が正常に登録されました。');
         } catch (\Exception $e) {
             DB::rollBack();
