@@ -18,8 +18,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'organization' => \App\Http\Middleware\EnsureOrganization::class,
         ]);
 
+        // TLS を終端するプロキシの後ろでも、HTTPS としてセッション Cookie を扱う。
+        $middleware->trustProxies(at: '*');
+
         $middleware->web(append: [
             \App\Http\Middleware\RefreshCognitoSession::class,
+            \App\Http\Middleware\ForgetLegacySessionCookies::class,
         ]);
 
         $middleware->redirectUsersTo(function (\Illuminate\Http\Request $request) {
