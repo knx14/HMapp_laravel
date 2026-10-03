@@ -61,7 +61,7 @@ class WorkLogController extends Controller
     {
         $user = $request->attributes->get('auth_user');
 
-        return $user !== null && Gate::forUser($user)->allows('own', $farm);
+        return $user !== null && Gate::forUser($user)->allows('operate', $farm);
     }
 
     private function ownsWorkLog(Request $request, WorkLog $workLog): bool

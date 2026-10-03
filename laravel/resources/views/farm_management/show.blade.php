@@ -24,7 +24,7 @@
                 <div>
                     <h2 class="text-2xl font-semibold text-gray-900">圃場詳細 － {{ $farm->farm_name }}</h2>
                     <dl class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-sm">
-                        @if($isAdmin)
+                        @if($isAdmin || (int) $farm->app_user_id !== (int) auth()->id())
                             <div><span class="text-gray-500">ユーザー名</span> <span class="ml-2">{{ $farm->appUser?->name ?? '-' }}</span></div>
                         @endif
                         <div><span class="text-gray-500">栽培方法</span> <span class="ml-2">{{ $farm->cultivation_method ?: '-' }}</span></div>

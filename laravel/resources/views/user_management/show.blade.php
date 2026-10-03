@@ -19,12 +19,28 @@
             </div>
         @endif
 
-        <div class="bg-white rounded-2xl shadow p-8 mb-6">
+        <div class="bg-white rounded-2xl shadow p-8 mb-6 space-y-4">
             <h2 class="text-xl font-semibold mb-4">ユーザー情報</h2>
-            <p class="text-gray-700"><span class="font-semibold">ID:</span> {{ $user->id }}</p>
-            <p class="text-gray-700"><span class="font-semibold">名前:</span> {{ $user->name ?? '-' }}</p>
-            <p class="text-gray-700"><span class="font-semibold">メール:</span> {{ $user->email ?? '-' }}</p>
+            <p class="text-gray-700"><span class="font-semibold">Cognito Sub:</span> {{ $user->cognito_sub ?? '-' }}</p>
+            <p class="text-gray-700"><span class="font-semibold">登録日:</span> {{ $user->created_at?->copy()->timezone(config('measurements.display_timezone'))->format('Y-m-d H:i') ?? '-' }}</p>
             <p class="text-gray-700"><span class="font-semibold">所属:</span> {{ $user->organization ?? '未入力' }}</p>
+            <p class="text-xs text-gray-500">所属は本人が設定します。管理者は変更できません。</p>
+            <form method="POST" action="{{ route('user-management.update', $user) }}" class="space-y-2">
+                @csrf
+                @method('PUT')
+                <label class="block text-sm font-semibold">ユーザー名
+                    <input type="text" name="name" required maxlength="255" value="{{ old('name', $user->name) }}" class="mt-1 w-full border rounded px-3 py-2">
+                </label>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">ユーザー名を保存</button>
+            </form>
+            <form method="POST" action="{{ route('user-management.update', $user) }}" class="space-y-2">
+                @csrf
+                @method('PUT')
+                <label class="block text-sm font-semibold">メールアドレス
+                    <input type="email" name="email" required maxlength="255" value="{{ old('email', $user->email) }}" class="mt-1 w-full border rounded px-3 py-2">
+                </label>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">メールアドレスを保存</button>
+            </form>
             <p class="text-gray-700"><span class="font-semibold">権限:</span> {{ $user->isAdmin() ? '管理者' : '一般ユーザー' }}</p>
             @if($user->isAdmin())
                 <p class="text-gray-700"><span class="font-semibold">管理者になった日時:</span> {{ $user->admin_granted_at?->format('Y-m-d H:i') ?? '-' }}</p>

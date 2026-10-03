@@ -23,11 +23,19 @@ class UploadPolicy
     }
 
     /**
-     * Web 画面での地点の調整。モバイル向け API は own だけを使う。
+     * 自分の測定か、同じ所属のメンバーの測定。地点の調整と削除に使う。
+     */
+    public function operate(AppUser $user, Upload $upload): bool
+    {
+        return $upload->farm !== null && $this->farms->operate($user, $upload->farm);
+    }
+
+    /**
+     * 地点の調整。Web の管理者は全測定、それ以外は自分の測定と同じ所属の測定。
      */
     public function update(AppUser $user, Upload $upload): bool
     {
-        return $user->isAdmin() || $this->own($user, $upload);
+        return $user->isAdmin() || $this->operate($user, $upload);
     }
 
     /**
@@ -40,6 +48,6 @@ class UploadPolicy
 
     public function delete(AppUser $user, Upload $upload): bool
     {
-        return $user->isAdmin() || $this->own($user, $upload);
+        return $user->isAdmin() || $this->operate($user, $upload);
     }
 }

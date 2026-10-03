@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\OrganizationName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -43,7 +44,8 @@ class Farm extends Model
     }
 
     /**
-     * Web 画面で閲覧できる圃場に限定する（FarmPolicy::view と同じ範囲）。
+     * Web 画面で閲覧できる圃場。管理者は全件、それ以外は自分の表示中の圃場と、
+     * 所属名が一致するメンバーの表示中の圃場。
      */
     public function scopeAccessibleBy(Builder $query, AppUser $user): Builder
     {
@@ -51,7 +53,29 @@ class Farm extends Model
             return $query;
         }
 
-        return $query->ownedBy($user)->visible();
+        return $query->visibleToMember($user);
+    }
+
+    /**
+     * モバイル API の閲覧範囲。管理者でも Web の全件表示にはしない。
+     * 自分の表示中の圃場と、所属名が一致するメンバーの表示中の圃場。
+     */
+    public function scopeVisibleToMember(Builder $query, AppUser $user): Builder
+    {
+        return $query->visible()->where(function (Builder $farms) use ($user): void {
+            $farms->where('farms.app_user_id', $user->id);
+            $organization = OrganizationName::normalize($user->organization);
+            if ($organization === null) {
+                return;
+            }
+
+            $farms->orWhere(function (Builder $shared) use ($user, $organization): void {
+                $shared->where('farms.app_user_id', '!=', $user->id)
+                    ->whereHas('appUser', function (Builder $owners) use ($organization): void {
+                        $owners->where('organization', $organization)->whereNull('deleted_at');
+                    });
+            });
+        });
     }
 
     /**

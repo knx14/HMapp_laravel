@@ -86,7 +86,7 @@
                             </div>
                         </div>
                         <dl class="mt-3 grid grid-cols-3 gap-y-1 text-sm">
-                            @if($isAdmin)
+                            @if($isAdmin || (int) $farm->app_user_id !== (int) auth()->id())
                                 <dt class="text-gray-500">ユーザー名</dt>
                                 <dd class="col-span-2 text-gray-900">{{ $farm->appUser?->name ?? '-' }}</dd>
                             @endif

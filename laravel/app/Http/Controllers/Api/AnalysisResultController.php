@@ -78,7 +78,7 @@ class AnalysisResultController extends Controller
         $analysisResult->loadMissing('upload.farm');
 
         return $analysisResult->upload !== null
-            && Gate::forUser($user)->allows('own', $analysisResult->upload);
+            && Gate::forUser($user)->allows('operate', $analysisResult->upload);
     }
 
     private function authUser(Request $request): AppUser

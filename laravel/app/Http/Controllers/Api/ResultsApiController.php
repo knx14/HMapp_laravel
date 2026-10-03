@@ -28,8 +28,7 @@ class ResultsApiController extends Controller
         $user = $this->authUser($request);
 
         $farms = Farm::query()
-            ->visible()
-            ->ownedBy($user)
+            ->visibleToMember($user)
             ->get(['id', 'farm_name']);
 
         if ($farms->isEmpty()) {
@@ -83,8 +82,7 @@ class ResultsApiController extends Controller
         $user = $this->authUser($request);
 
         $farms = Farm::query()
-            ->visible()
-            ->ownedBy($user)
+            ->visibleToMember($user)
             ->orderBy('id')
             ->get(['id', 'farm_name', 'boundary_polygon']);
 
@@ -287,14 +285,11 @@ class ResultsApiController extends Controller
         $user = $this->authUser($request);
 
         $farm = Farm::find($farmId);
-        if (! $farm) {
+        if (! $farm || $farm->hidden_at !== null) {
             abort(404);
         }
-        if (Gate::forUser($user)->denies('own', $farm)) {
+        if (Gate::forUser($user)->denies('visibleToMember', $farm)) {
             abort(403);
-        }
-        if ($farm->hidden_at !== null) {
-            abort(404);
         }
 
         return $farm;
