@@ -36,7 +36,7 @@ class ManualResultController extends Controller
 
         $farm = Farm::findOrFail($request->integer('farm_id'));
 
-        if (Gate::forUser($user)->denies('own', $farm)) {
+        if (Gate::forUser($user)->denies('operate', $farm)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -106,7 +106,7 @@ class ManualResultController extends Controller
 
         $upload->load(['farm', 'analysisResult']);
 
-        if (Gate::forUser($user)->denies('own', $upload)) {
+        if (Gate::forUser($user)->denies('operate', $upload)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -169,7 +169,7 @@ class ManualResultController extends Controller
 
         $upload->load('farm');
 
-        if (Gate::forUser($user)->denies('own', $upload)) {
+        if (Gate::forUser($user)->denies('operate', $upload)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 

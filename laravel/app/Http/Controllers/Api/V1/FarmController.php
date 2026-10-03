@@ -23,8 +23,9 @@ class FarmController extends Controller
     {
         $user = $request->attributes->get('auth_user');
 
-        $farms = Farm::visible()
-            ->ownedBy($user)
+        $farms = Farm::query()
+            ->visibleToMember($user)
+            ->with('appUser')
             ->latest()
             ->get();
 
@@ -48,7 +49,7 @@ class FarmController extends Controller
             'boundary_polygon' => $request->input('boundary_polygon'),
         ]);
 
-        return (new FarmResource($farm))
+        return (new FarmResource($farm->load('appUser')))
             ->response()
             ->setStatusCode(201);
     }
@@ -71,7 +72,7 @@ class FarmController extends Controller
             'boundary_polygon' => $request->input('boundary_polygon'),
         ]);
 
-        return new FarmResource($farm);
+        return new FarmResource($farm->load('appUser'));
 
     }
 

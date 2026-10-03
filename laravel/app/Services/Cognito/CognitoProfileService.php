@@ -70,6 +70,43 @@ class CognitoProfileService
         ]));
     }
 
+    /**
+     * 管理者が他ユーザーのメールアドレスを確定させる。確認コードは使わない。
+     */
+    public function updateEmailVerified(string $username, string $email): void
+    {
+        $this->call(fn () => $this->adminClient()->adminUpdateUserAttributes([
+            'UserPoolId' => $this->userPoolId(),
+            'Username' => $username,
+            'UserAttributes' => [
+                ['Name' => 'email', 'Value' => $email],
+                ['Name' => 'email_verified', 'Value' => 'true'],
+            ],
+        ]));
+    }
+
+    /**
+     * Cognito の Username を sub から引く。Admin API は sub だけでは更新できない。
+     */
+    public function usernameForSub(string $sub): string
+    {
+        $username = null;
+        $this->call(function () use ($sub, &$username): void {
+            $result = $this->adminClient()->listUsers([
+                'UserPoolId' => $this->userPoolId(),
+                'Filter' => 'sub = "'.$sub.'"',
+                'Limit' => 1,
+            ]);
+            $username = $result['Users'][0]['Username'] ?? null;
+        });
+
+        if (! is_string($username) || $username === '') {
+            throw new CognitoAuthException(CognitoAuthException::USER_NOT_FOUND, 'Cognito user was not found');
+        }
+
+        return $username;
+    }
+
     private function call(callable $operation): void
     {
         try {
