@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\FarmManagementController;
@@ -103,6 +104,7 @@ Route::middleware(['auth', 'organization'])->group(function () {
 // 管理者専用の画面
 Route::middleware(['auth', 'organization', 'admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
 
     Route::get('/users', [UserManagementController::class, 'index'])->name('user-management.index');
     Route::post('/users/export', [UserManagementController::class, 'export'])->name('user-management.export');
@@ -119,8 +121,6 @@ Route::middleware(['auth', 'organization', 'admin'])->group(function () {
     Route::redirect('/uploads', '/measurements')->name('upload-management.index');
     Route::get('/uploads/create', [UploadManagementController::class, 'create'])->name('upload-management.create');
     Route::post('/uploads', [UploadManagementController::class, 'store'])->name('upload-management.store');
-    Route::get('/uploads/download', [UploadManagementController::class, 'download'])->name('upload-management.download');
-
     // 結果入力
     Route::get('/estimation-results/farms/{farm}/input', [EstimationResultsController::class, 'inputResult'])
         ->whereNumber('farm')

@@ -58,19 +58,11 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('user-management.index') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('user-management.index') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
+                        <a href="{{ route('user-management.index') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('user-management.*') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
                             <span class="mr-3">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14a4 4 0 100-8 4 4 0 000 8z" /></svg>
                             </span>
                             ユーザー管理
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="flex items-center px-4 py-3 rounded-lg transition text-gray-700 hover:bg-blue-50">
-                            <span class="mr-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="4" y="7" width="16" height="13" rx="2" stroke="currentColor" stroke-width="2" fill="none" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5a4 4 0 018 0v2" /></svg>
-                            </span>
-                            課金管理
                         </a>
                     </li>
                     @endcan
@@ -105,6 +97,16 @@
                             設定
                         </a>
                     </li>
+                    @can('admin')
+                    <li>
+                        <a href="{{ route('billing.index') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('billing.*') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
+                            <span class="mr-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="4" y="7" width="16" height="13" rx="2" stroke="currentColor" stroke-width="2" fill="none" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5a4 4 0 018 0v2" /></svg>
+                            </span>
+                            課金管理
+                        </a>
+                    </li>
+                    @endcan
                 </ul>
             </nav>
         </aside>
