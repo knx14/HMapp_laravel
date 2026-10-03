@@ -2,12 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Upload;
 use App\Models\Farm;
-use App\Models\AppUser;
+use App\Models\Upload;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class UploadManagementController extends Controller
 {
@@ -77,54 +74,5 @@ class UploadManagementController extends Controller
                 ->withErrors(['error' => 'アップロードの登録中にエラーが発生しました。'])
                 ->withInput();
         }
-    }
-
-    /**
-     * S3からCSVファイルをダウンロード
-     * EC2のIAMロールを使用して認証
-     * file_pathをクエリパラメータで受け取り、DB接続不要でS3から直接ダウンロード
-     */
-    public function download(Request $request)
-    {
-        $filePath = $request->query('path');
-        
-        if (!$filePath) {
-            abort(400, 'ファイルパスが指定されていません。');
-        }
-        
-        // セキュリティ: パストラバーサル攻撃を防ぐため、相対パスや危険な文字をチェック
-        if (strpos($filePath, '..') !== false || strpos($filePath, "\0") !== false) {
-            abort(400, '無効なファイルパスです。');
-        }
-        
-        // S3の設定を取得（IAMロールが自動的に使用される）
-        $disk = Storage::disk('s3');
-        
-        // ファイルが存在するか確認
-        if (!$disk->exists($filePath)) {
-            abort(404, 'ファイルが見つかりませんでした。');
-        }
-        
-        // ファイル名を取得（パスから最後の部分を取得）
-        $fileName = basename($filePath);
-        
-        // S3からストリームで読み出してそのまま返す（大きいCSVでもメモリに乗せない）
-        $stream = $disk->readStream($filePath);
-        if ($stream === false) {
-            abort(500, 'ファイルストリームの取得に失敗しました。');
-        }
-
-        return response()->streamDownload(function () use ($stream) {
-            try {
-                fpassthru($stream);
-            } finally {
-                if (is_resource($stream)) {
-                    fclose($stream);
-                }
-            }
-        }, $fileName, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-        ]);
     }
 }

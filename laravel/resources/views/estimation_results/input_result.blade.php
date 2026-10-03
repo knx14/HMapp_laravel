@@ -96,7 +96,7 @@
                     </div>
 
                     <div class="flex justify-end space-x-4">
-                        <a href="{{ route('estimation-results.farm-dates', ['farm' => $farm->id]) }}" 
+                        <a href="{{ route('measurements.index') }}" 
                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
                             キャンセル
                         </a>
