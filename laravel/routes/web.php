@@ -105,7 +105,10 @@ Route::middleware(['auth', 'organization', 'admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/users', [UserManagementController::class, 'index'])->name('user-management.index');
+    Route::post('/users/export', [UserManagementController::class, 'export'])->name('user-management.export');
+    Route::post('/users/delete', [UserManagementController::class, 'destroySelected'])->name('user-management.destroy-selected');
     Route::get('/users/{user}', [UserManagementController::class, 'show'])->name('user-management.show');
+    Route::put('/users/{user}', [UserManagementController::class, 'update'])->name('user-management.update');
     Route::post('/users/{user}/revoke-admin', [UserManagementController::class, 'revokeAdmin'])->name('user-management.revoke-admin');
 
     Route::put('/measurements/{upload}', [MeasurementController::class, 'update'])

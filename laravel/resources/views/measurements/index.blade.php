@@ -145,9 +145,7 @@
                                 <th class="px-6 py-4 text-left">
                                     <input type="checkbox" id="measurement-select-all" class="rounded" aria-label="このページをすべて選択">
                                 </th>
-                                @if($isAdmin)
-                                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">ユーザー名</th>
-                                @endif
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">ユーザー名</th>
                                 <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">圃場名</th>
                                 <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">栽培方式</th>
                                 <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">作物種別</th>
@@ -164,9 +162,7 @@
                                     <td class="px-6 py-4">
                                         <input type="checkbox" name="upload_ids[]" value="{{ $upload->id }}" form="measurement-export-form" class="measurement-row-check rounded" aria-label="選択">
                                     </td>
-                                    @if($isAdmin)
-                                        <td class="px-6 py-4 text-sm">{{ $upload->user_name ?? '-' }}</td>
-                                    @endif
+                                    <td class="px-6 py-4 text-sm">{{ $upload->user_name ?? '-' }}</td>
                                     <td class="px-6 py-4 text-sm">{{ $upload->farm_name }}</td>
                                     <td class="px-6 py-4 text-sm">{{ $upload->cultivation_method }}</td>
                                     <td class="px-6 py-4 text-sm">{{ $upload->crop_type }}</td>
