@@ -139,7 +139,7 @@ class MeasurementController extends Controller
 
     /**
      * PUT /measurements/{upload}
-     * 管理者による推定値・測定日時・測定番号の編集。
+     * 管理者による推定値・測定日時・測定番号と、圃場の所有者・名前・栽培方法・作物種別の編集。
      */
     public function update(Request $request, int $upload): JsonResponse
     {
@@ -154,6 +154,10 @@ class MeasurementController extends Controller
             'measurement_number' => ['nullable', 'integer', 'min:1'],
             'values' => ['sometimes', 'array'],
             'values.*' => ['nullable', 'numeric'],
+            'app_user_id' => ['required', 'integer'],
+            'farm_name' => ['required', 'string', 'max:255'],
+            'cultivation_method' => ['nullable', 'string', 'max:255'],
+            'crop_type' => ['nullable', 'string', 'max:255'],
         ], [
             'measurement_date.required' => '測定日を入力してください。',
             'measurement_date.date_format' => '測定日は YYYY-MM-DD の形式で入力してください。',
@@ -161,6 +165,11 @@ class MeasurementController extends Controller
             'measurement_number.integer' => '測定番号は1以上の整数で入力してください。',
             'measurement_number.min' => '測定番号は1以上の整数で入力してください。',
             'values.*.numeric' => '推定値は数値で入力してください。',
+            'app_user_id.required' => 'ユーザー名を選択してください。',
+            'farm_name.required' => '圃場名を入力してください。',
+            'farm_name.max' => '圃場名は255文字以内で入力してください。',
+            'cultivation_method.max' => '栽培方法は255文字以内で入力してください。',
+            'crop_type.max' => '作物種別は255文字以内で入力してください。',
         ]);
 
         $validated['values'] = array_intersect_key($validated['values'] ?? [], array_flip(MeasurementDetail::PARAMETERS));

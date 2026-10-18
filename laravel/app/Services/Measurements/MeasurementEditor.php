@@ -8,15 +8,19 @@ use App\Models\Upload;
 use App\Support\SoilParameterUnits;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 /**
- * 管理者による測定の編集（推定値・測定日時・測定番号）。圃場の付け替えは扱わない。
+ * 管理者による測定の編集。推定値・測定日時・測定番号に加え、
+ * 測定が属する圃場の所有者・圃場名・栽培方法・作物種別を更新する。
  */
 class MeasurementEditor
 {
+    public function __construct(private MeasurementDetail $detail) {}
+
     /**
-     * @param  array{measurement_date: string, measurement_time?: ?string, measurement_number?: ?int, values?: array<string, mixed>}  $input
+     * @param  array{measurement_date: string, measurement_time?: ?string, measurement_number?: ?int, values?: array<string, mixed>, app_user_id: int, farm_name: string, cultivation_method?: ?string, crop_type?: ?string}  $input
      */
     public function update(Upload $upload, array $input): void
     {
@@ -38,13 +42,42 @@ class MeasurementEditor
             ]);
         }
 
-        DB::transaction(function () use ($upload, $date, $time, $number, $values, $point): void {
+        $farm = $upload->farm;
+        if ($farm === null) {
+            throw ValidationException::withMessages([
+                'farm_name' => 'この測定の圃場が見つからないため、保存できません。',
+            ]);
+        }
+
+        $ownerId = (int) $input['app_user_id'];
+        if (! $this->detail->ownerChoices($farm)->contains(fn ($member) => (int) $member->id === $ownerId)) {
+            throw ValidationException::withMessages([
+                'app_user_id' => 'ユーザー名は、同じ所属の人から選択してください。',
+            ]);
+        }
+
+        DB::transaction(function () use ($upload, $date, $time, $number, $values, $point, $farm, $input, $ownerId): void {
             $upload->measurement_date = $date;
             $upload->measured_at = $time === null
                 ? null
                 : CarbonImmutable::createFromFormat('Y-m-d H:i', "{$date} {$time}", JstDateTime::TIMEZONE)->startOfMinute();
             $upload->measurement_number = $number;
             $upload->save();
+
+            if ((int) $farm->app_user_id !== $ownerId) {
+                Log::info('farm owner changed', [
+                    'farm_id' => $farm->id,
+                    'from_app_user_id' => $farm->app_user_id,
+                    'to_app_user_id' => $ownerId,
+                    'by_upload_id' => $upload->id,
+                ]);
+                $farm->app_user_id = $ownerId;
+            }
+
+            $farm->farm_name = $input['farm_name'];
+            $farm->cultivation_method = $this->blankToNull($input['cultivation_method'] ?? null);
+            $farm->crop_type = $this->blankToNull($input['crop_type'] ?? null);
+            $farm->save();
 
             if ($point === null) {
                 return;
@@ -67,6 +100,17 @@ class MeasurementEditor
                 );
             }
         });
+    }
+
+    private function blankToNull(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return $value === '' ? null : $value;
     }
 
     private function numberTaken(Upload $upload, string $date, int $number): bool
