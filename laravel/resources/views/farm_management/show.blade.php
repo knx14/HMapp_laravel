@@ -71,9 +71,8 @@
             <div id="map" class="relative w-full h-[28rem] overflow-hidden bg-gray-200 rounded-lg"></div>
             <p id="map-empty" class="hidden mt-3 text-sm text-gray-500">この測定日の地点がありません。</p>
             <div id="colorbar-container" class="mt-4 hidden">
-                <div class="flex items-center justify-between mb-2">
+                <div class="mb-2">
                     <span id="colorbar-label" class="text-sm font-medium text-gray-700">CEC</span>
-                    <span class="text-xs text-gray-500">低い値が青、中間が白、高い値が赤（モバイルの結果マップと同じ配色）</span>
                 </div>
                 <div id="colorbar" class="h-4 rounded border"></div>
                 <div class="flex justify-between mt-1 text-xs text-gray-500">

@@ -23,7 +23,6 @@ class UserManagementController extends Controller
         $name = $this->queryString($request, 'name');
         $organization = $this->queryString($request, 'organization');
         $farmName = $this->queryString($request, 'farm_name');
-        $cognitoSub = $this->queryString($request, 'cognito_sub');
         $role = $request->query('role') === AppUser::ROLE_ADMIN ? AppUser::ROLE_ADMIN : '';
 
         $query = AppUser::query();
@@ -31,7 +30,6 @@ class UserManagementController extends Controller
         if ($organization !== '') {
             $this->whereLike($query, 'organization', OrganizationName::normalize($organization) ?? $organization);
         }
-        $this->whereLike($query, 'cognito_sub', $cognitoSub);
         if ($farmName !== '') {
             $query->whereHas('farms', function (Builder $farms) use ($farmName): void {
                 $this->whereLike($farms, 'farm_name', $farmName);
@@ -49,7 +47,6 @@ class UserManagementController extends Controller
                 'name' => $name,
                 'organization' => $organization,
                 'farm_name' => $farmName,
-                'cognito_sub' => $cognitoSub,
                 'role' => $role,
             ],
         ]);
@@ -242,7 +239,6 @@ class UserManagementController extends Controller
             'name' => $this->queryString($request, 'name'),
             'organization' => $this->queryString($request, 'organization'),
             'farm_name' => $this->queryString($request, 'farm_name'),
-            'cognito_sub' => $this->queryString($request, 'cognito_sub'),
             'role' => $request->input('role') === AppUser::ROLE_ADMIN ? AppUser::ROLE_ADMIN : '',
         ], fn ($value) => $value !== '');
     }
