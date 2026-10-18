@@ -217,9 +217,21 @@
                             <label class="text-sm">測定番号
                                 <input type="number" name="measurement_number" min="1" step="1" class="mt-1 w-full border rounded px-2 py-1">
                             </label>
+                            <label class="text-sm col-span-2">ユーザー名
+                                <select name="app_user_id" required class="mt-1 w-full border rounded px-2 py-1"></select>
+                            </label>
+                            <label class="text-sm col-span-2">圃場名
+                                <input type="text" name="farm_name" required maxlength="255" class="mt-1 w-full border rounded px-2 py-1">
+                            </label>
+                            <label class="text-sm">栽培方法
+                                <input type="text" name="cultivation_method" maxlength="255" class="mt-1 w-full border rounded px-2 py-1">
+                            </label>
+                            <label class="text-sm">作物種別
+                                <input type="text" name="crop_type" maxlength="255" class="mt-1 w-full border rounded px-2 py-1">
+                            </label>
                         </div>
                         <div id="measurement-edit-values" class="grid grid-cols-2 gap-3"></div>
-                        <p class="text-xs text-gray-500">ユーザー名・圃場名・栽培方法・作物種別の修正は未対応です。</p>
+                        <p class="text-xs text-gray-500">ユーザー名は、この測定の所有者と同じ所属の人から選べます。圃場名・栽培方法・作物種別の変更は、同じ圃場の測定すべてに反映されます。</p>
                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">保存</button>
                     </form>
                 </div>
@@ -385,6 +397,16 @@
         editForm.measurement_date.value = data.measurement_date ?? '';
         editForm.measurement_time.value = data.measurement_time ?? '';
         editForm.measurement_number.value = data.measurement_number ?? '';
+        editForm.farm_name.value = data.farm.name ?? '';
+        editForm.cultivation_method.value = data.farm.cultivation_method ?? '';
+        editForm.crop_type.value = data.farm.crop_type ?? '';
+        editForm.app_user_id.replaceChildren(...(data.owner_options || []).map((option) => {
+            const item = document.createElement('option');
+            item.value = String(option.id);
+            item.textContent = option.label;
+            return item;
+        }));
+        editForm.app_user_id.value = data.owner_id === null ? '' : String(data.owner_id);
         editValues.replaceChildren(...data.values.map((item) => {
             const label = document.createElement('label');
             label.className = 'text-sm';
@@ -416,6 +438,10 @@
                 measurement_date: editForm.measurement_date.value,
                 measurement_time: editForm.measurement_time.value || null,
                 measurement_number: editForm.measurement_number.value === '' ? null : Number(editForm.measurement_number.value),
+                app_user_id: Number(editForm.app_user_id.value),
+                farm_name: editForm.farm_name.value,
+                cultivation_method: editForm.cultivation_method.value || null,
+                crop_type: editForm.crop_type.value || null,
                 values,
             });
             render(data);
