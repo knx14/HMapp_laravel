@@ -14,12 +14,12 @@
 
         <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
             <div class="max-w-xl">
-                <h2 class="text-lg font-medium text-gray-900">ユーザーネーム</h2>
+                <h2 class="text-lg font-medium text-gray-900">ユーザー名</h2>
                 <form method="POST" action="{{ route('profile.name') }}" class="mt-4 space-y-4">
                     @csrf
                     @method('PUT')
                     <div>
-                        <label for="name" class="block text-sm font-medium text-gray-700">ユーザーネーム</label>
+                        <label for="name" class="block text-sm font-medium text-gray-700">ユーザー名</label>
                         <input id="name" name="name" type="text" required maxlength="255"
                                value="{{ old('name', $user->name) }}"
                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
