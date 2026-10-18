@@ -7,17 +7,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'HenryMonitor')</title>
+    <style>
+        [x-cloak] { display: none !important; }
+        .app-header { position: fixed; top: 0; left: 0; width: 100%; z-index: 50; height: 4rem; padding-left: 1rem; padding-right: 1rem; }
+        .app-header-leading { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+        .app-header-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.25rem; line-height: 1.75rem; }
+        .app-menu-button { display: inline-flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border-radius: 0.5rem; }
+        .app-menu-button:hover { background: rgba(255, 255, 255, 0.15); }
+        .app-shell { padding-top: 4rem; }
+        .app-sidebar { position: fixed; left: 0; top: 4rem; z-index: 40; height: calc(100vh - 4rem); transform: translateX(-100%); transition: transform 200ms ease; }
+        .app-sidebar.is-open { transform: none; }
+        .app-backdrop { position: fixed; top: 4rem; right: 0; bottom: 0; left: 0; z-index: 30; background: rgba(0, 0, 0, 0.4); }
+        .app-main { min-width: 0; padding: 1rem; }
+        @media (min-width: 640px) {
+            .app-header { padding-left: 2rem; padding-right: 2rem; }
+            .app-header-title { font-size: 1.5rem; }
+            .app-main { padding: 1.5rem; }
+        }
+        @media (min-width: 1280px) {
+            .app-menu-button { display: none; }
+            .app-sidebar,
+            .app-sidebar.is-open { transform: none; }
+            .app-backdrop { display: none !important; }
+            .app-main { margin-left: 16rem; }
+            body.sidebar-open { overflow: auto; }
+        }
+        @media (max-width: 1279px) {
+            body.sidebar-open { overflow: hidden; }
+        }
+    </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-[#f5f7fa] min-h-screen flex flex-col">
+<body class="bg-[#f5f7fa] min-h-screen flex flex-col" x-data="{ sidebarOpen: false }" :class="{ 'sidebar-open': sidebarOpen }" @keydown.escape.window="sidebarOpen = false">
 
-    <header class="fixed top-0 left-0 w-full bg-blue-600 text-white text-2xl font-bold px-8 py-6 flex items-center justify-between shadow-lg z-50">
-        <span>@yield('header-title', 'HenryMonitor')</span>
+    <header class="app-header fixed top-0 left-0 w-full bg-blue-600 text-white font-bold flex items-center justify-between shadow-lg z-50">
+        <div class="app-header-leading">
+            <button type="button" class="app-menu-button focus:outline-none" @click="sidebarOpen = !sidebarOpen" :aria-expanded="sidebarOpen.toString()" aria-controls="app-sidebar" aria-label="メニュー">
+                <x-lucide name="menu" class="h-6 w-6" />
+            </button>
+            <span class="app-header-title">@yield('header-title', 'HenryMonitor')</span>
+        </div>
         <div x-data="{ open: false }" @click.outside="open = false" class="relative">
-            <button @click="open = !open" class="flex items-center space-x-2 focus:outline-none">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
-                </svg>
+            <button @click="open = !open" class="flex items-center space-x-2 focus:outline-none" aria-label="アカウントメニュー">
+                <x-lucide name="circle-user" class="h-6 w-6 text-white" />
             </button>
 
             <div x-show="open"
@@ -44,65 +76,47 @@
         </div>
     </header>
 
-    <div class="flex flex-1 pt-[72px]">
-        <aside class="fixed top-[72px] left-0 h-[calc(100vh-72px)] w-64 bg-white shadow-lg flex flex-col p-6 flex-shrink-0 z-40">
+    <div class="app-shell flex flex-1">
+        <div x-show="sidebarOpen" x-cloak class="app-backdrop" @click="sidebarOpen = false"></div>
+        <aside id="app-sidebar" class="app-sidebar fixed left-0 w-64 bg-white shadow-lg flex flex-col p-6 overflow-y-auto" :class="{ 'is-open': sidebarOpen }">
             <nav class="flex-1">
-                <ul class="space-y-2">
+                <ul class="space-y-2" @click="sidebarOpen = false">
                     @can('admin')
                     <li>
                         <a href="{{ route('dashboard') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('dashboard') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
-                            <span class="mr-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8v-10h-8v10zm0-18v6h8V3h-8z" /></svg>
-                            </span>
+                            <span class="mr-3"><x-lucide name="layout-dashboard" class="h-6 w-6" /></span>
                             ダッシュボード
                         </a>
                     </li>
                     <li>
                         <a href="{{ route('user-management.index') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('user-management.*') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
-                            <span class="mr-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14a4 4 0 100-8 4 4 0 000 8z" /></svg>
-                            </span>
+                            <span class="mr-3"><x-lucide name="users" class="h-6 w-6" /></span>
                             ユーザー管理
                         </a>
                     </li>
                     @endcan
                     <li>
                         <a href="{{ route('farm-management.index') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('farm-management.*') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
-                            <span class="mr-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                </svg>
-                            </span>
+                            <span class="mr-3"><x-lucide name="land-plot" class="h-6 w-6" /></span>
                             圃場管理
                         </a>
                     </li>
                     <li>
                         <a href="{{ route('measurements.index') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('measurements.*') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
-                            <span class="mr-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                            </span>
+                            <span class="mr-3"><x-lucide name="chart-column" class="h-6 w-6" /></span>
                             測定データ閲覧
                         </a>
                     </li>
                     <li>
                         <a href="{{ route('profile.edit') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('profile.edit') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
-                            <span class="mr-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </span>
+                            <span class="mr-3"><x-lucide name="settings" class="h-6 w-6" /></span>
                             設定
                         </a>
                     </li>
                     @can('admin')
                     <li>
                         <a href="{{ route('billing.index') }}" class="flex items-center px-4 py-3 rounded-lg transition {{ request()->routeIs('billing.*') ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-700 hover:bg-blue-50' }}">
-                            <span class="mr-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="4" y="7" width="16" height="13" rx="2" stroke="currentColor" stroke-width="2" fill="none" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5a4 4 0 018 0v2" /></svg>
-                            </span>
+                            <span class="mr-3"><x-lucide name="credit-card" class="h-6 w-6" /></span>
                             課金管理
                         </a>
                     </li>
@@ -111,7 +125,7 @@
             </nav>
         </aside>
 
-        <main class="flex-1 ml-64 p-6 overflow-y-auto">
+        <main class="app-main flex-1 overflow-y-auto">
             @yield('content')
         </main>
     </div>
