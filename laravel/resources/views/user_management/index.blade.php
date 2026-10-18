@@ -24,7 +24,7 @@
     <div class="max-w-7xl mx-auto px-4">
         <div class="bg-white rounded-2xl shadow p-8 mb-8">
             <form method="GET" action="{{ route('user-management.index') }}" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                         <label class="block font-semibold mb-1">ユーザー名</label>
                         <input type="text" name="name" value="{{ $filters['name'] ?? '' }}" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="ユーザー名">
@@ -36,10 +36,6 @@
                     <div>
                         <label class="block font-semibold mb-1">圃場名</label>
                         <input type="text" name="farm_name" value="{{ $filters['farm_name'] ?? '' }}" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="所有する圃場名">
-                    </div>
-                    <div>
-                        <label class="block font-semibold mb-1">Cognito Sub</label>
-                        <input type="text" name="cognito_sub" value="{{ $filters['cognito_sub'] ?? '' }}" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Cognito Sub">
                     </div>
                 </div>
                 <label class="inline-flex items-center gap-2">

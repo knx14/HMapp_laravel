@@ -61,16 +61,23 @@ jobs:
             
             # 2. アプリのディレクトリへ移動
             cd $EC2_APP_DIR
+
+            # 3. 動いていないイメージを消してから取得する。ディスクが埋まると pull が失敗し、古いコンテナのままになる。
+            #    起動中のコンテナが使っているイメージは残る。down と up の間では消さない。
+            docker image prune -af
             
-            # 3. 最新のイメージをダウンロード (ここもリポジトリ名を合わせました)
+            # 4. 最新のイメージをダウンロード (ここもリポジトリ名を合わせました)
             docker pull $AWS_ACCOUNT_ID.dkr.ecr.ap-northeast-1.amazonaws.com/laravel-admin-app:latest
             
-            # 4. コンテナを作り直す
+            # 5. コンテナを作り直す
             # (Step3で修正した docker-compose.production.yml が使われます)
             docker compose -f docker-compose.production.yml down
             docker compose -f docker-compose.production.yml up -d
+
+            # 6. 入れ替えでタグが外れた直前のイメージを消す
+            docker image prune -af
             
-            # 5. マイグレーションとキャッシュクリア
+            # 7. マイグレーションとキャッシュクリア
             # (Git Pullをしないので、docker内のコードは常に最新です)
             docker compose -f docker-compose.production.yml exec -T php php artisan migrate --force
             docker compose -f docker-compose.production.yml exec -T php php artisan config:clear

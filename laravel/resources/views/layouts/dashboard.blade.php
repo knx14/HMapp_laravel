@@ -7,6 +7,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'HenryMonitor')</title>
+    <link rel="icon" href="{{ asset('favicon.ico') }}?v=2" sizes="any">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}?v=2">
     <style>
         [x-cloak] { display: none !important; }
         .app-header { position: fixed; top: 0; left: 0; width: 100%; z-index: 50; height: 4rem; padding-left: 1rem; padding-right: 1rem; }
