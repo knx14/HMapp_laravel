@@ -6,9 +6,9 @@
 @section('content')
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
 
-    <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500 flex items-center gap-x-6">
-        <div class="p-3 flex-shrink-0">
-            <img src="{{ asset('images/usersIcon.png') }}" alt="ユーザーアイコン" class="h-8 w-8 text-blue-500">
+    <div class="bg-white p-6 rounded-lg shadow-md flex items-center gap-x-6">
+        <div class="p-3 flex-shrink-0 rounded-lg text-gray-700" style="background:#f3f4f6">
+            <x-lucide name="users" class="h-6 w-6" />
         </div>
         <div>
             <div class="text-4xl font-bold text-gray-800 leading-none">
@@ -18,9 +18,9 @@
         </div>
     </div>
 
-    <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500 flex items-center gap-x-6">
-        <div class="p-3 flex-shrink-0">
-            <img src="{{ asset('images/uploadIcon.png') }}" alt="アップロードアイコン" class="h-8 w-8 text-green-500">
+    <div class="bg-white p-6 rounded-lg shadow-md flex items-center gap-x-6">
+        <div class="p-3 flex-shrink-0 rounded-lg text-gray-700" style="background:#f3f4f6">
+            <x-lucide name="upload" class="h-6 w-6" />
         </div>
         <div>
             <div class="text-4xl font-bold text-gray-800 leading-none">
@@ -30,9 +30,9 @@
         </div>
     </div>
 
-    <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-yellow-500 flex items-center gap-x-6">
-        <div class="p-3 flex-shrink-0">
-            <img src="{{ asset('images/outupIcon.png') }}" alt="演算処理アイコン" class="h-8 w-8 text-yellow-500">
+    <div class="bg-white p-6 rounded-lg shadow-md flex items-center gap-x-6">
+        <div class="p-3 flex-shrink-0 rounded-lg text-gray-700" style="background:#f3f4f6">
+            <x-lucide name="calculator" class="h-6 w-6" />
         </div>
         <div>
             <div class="text-4xl font-bold text-gray-800 leading-none">
