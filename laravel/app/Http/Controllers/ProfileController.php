@@ -28,7 +28,7 @@ class ProfileController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-        ], [], ['name' => 'ユーザーネーム']);
+        ], [], ['name' => 'ユーザー名']);
 
         try {
             $settings->updateName($request, $request->user(), $validated['name']);
@@ -36,7 +36,7 @@ class ProfileController extends Controller
             $this->failFromCognito($e, 'name');
         }
 
-        return redirect()->route('profile.edit')->with('status', 'ユーザーネームを変更しました。');
+        return redirect()->route('profile.edit')->with('status', 'ユーザー名を変更しました。');
     }
 
     public function requestEmailChange(Request $request, AccountSettingsService $settings): RedirectResponse
